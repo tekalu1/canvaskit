@@ -1,0 +1,177 @@
+{
+  "version": "1.0.0",
+  "meta": {
+    "name": "Test Canvas",
+    "created": "2025-01-01T00:00:00.000Z",
+    "modified": "2025-01-01T00:00:00.000Z"
+  },
+  "tokens": {
+    "colors": {
+      "primary": { "value": "#3B82F6", "description": "Primary brand color" },
+      "secondary": { "value": "#6366F1" },
+      "neutral": { "value": "#6B7280" }
+    },
+    "spacing": {
+      "xs": { "value": "4px" },
+      "sm": { "value": "8px" },
+      "md": { "value": "16px" },
+      "lg": { "value": "24px" },
+      "xl": { "value": "32px" }
+    },
+    "typography": {
+      "heading": {
+        "fontFamily": "Inter",
+        "fontSize": "32px",
+        "fontWeight": "700",
+        "lineHeight": "1.2"
+      },
+      "body": {
+        "fontFamily": "Inter",
+        "fontSize": "16px",
+        "fontWeight": "400",
+        "lineHeight": "1.5"
+      }
+    },
+    "borderRadius": {
+      "sm": { "value": "4px" },
+      "md": { "value": "8px" },
+      "lg": { "value": "16px" },
+      "full": { "value": "9999px" }
+    },
+    "shadows": {
+      "sm": { "value": "0 1px 2px rgba(0,0,0,0.05)" },
+      "md": { "value": "0 4px 6px rgba(0,0,0,0.1)" }
+    },
+    "breakpoints": {
+      "sm": { "value": "640px" },
+      "md": { "value": "768px" },
+      "lg": { "value": "1024px" },
+      "xl": { "value": "1280px" }
+    }
+  },
+  "components": {
+    "Button": {
+      "description": "Primary action button",
+      "variants": {
+        "size": {
+          "sm": { "padding": "8px 16px", "fontSize": "14px" },
+          "md": { "padding": "12px 24px", "fontSize": "16px" },
+          "lg": { "padding": "16px 32px", "fontSize": "18px" }
+        }
+      },
+      "props": ["text", "variant", "disabled"],
+      "defaultProps": { "text": "Click me", "variant": "primary", "disabled": false },
+      "template": {
+        "type": "frame",
+        "styles": {
+          "backgroundColor": "{colors.primary}",
+          "borderRadius": "{borderRadius.md}",
+          "padding": "12px 24px"
+        },
+        "children": [
+          {
+            "type": "text",
+            "content": "Click me",
+            "styles": { "color": "#ffffff", "fontWeight": "semibold" }
+          }
+        ]
+      }
+    },
+    "Card": {
+      "description": "Content card container",
+      "variants": {},
+      "props": ["title"],
+      "defaultProps": { "title": "Card Title" }
+    }
+  },
+  "pages": {
+    "page1": {
+      "name": "Home",
+      "width": 1440,
+      "height": null,
+      "nodes": {
+        "root": {
+          "type": "frame",
+          "name": "Root",
+          "layout": { "direction": "column" },
+          "children": ["header", "main"],
+          "styles": { "width": "100%", "minHeight": "100vh" }
+        },
+        "header": {
+          "type": "frame",
+          "name": "Header",
+          "layout": { "direction": "row", "justify": "between", "align": "center" },
+          "children": ["logo", "nav"],
+          "styles": { "padding": "16px 32px", "backgroundColor": "#ffffff" }
+        },
+        "logo": {
+          "type": "text",
+          "name": "Logo",
+          "content": "CanvasKit",
+          "styles": { "fontSize": "24px", "fontWeight": "bold" }
+        },
+        "nav": {
+          "type": "frame",
+          "name": "Navigation",
+          "layout": { "direction": "row", "gap": "16px" },
+          "children": ["nav-home", "nav-about"],
+          "styles": {}
+        },
+        "nav-home": {
+          "type": "text",
+          "name": "Nav Home",
+          "content": "Home",
+          "styles": { "color": "#3B82F6" }
+        },
+        "nav-about": {
+          "type": "text",
+          "name": "Nav About",
+          "content": "About",
+          "styles": {}
+        },
+        "main": {
+          "type": "frame",
+          "name": "Main Content",
+          "layout": { "direction": "column", "gap": "24px" },
+          "children": ["hero-title", "hero-image", "cta-button"],
+          "styles": { "padding": "48px 32px" }
+        },
+        "hero-title": {
+          "type": "text",
+          "name": "Hero Title",
+          "content": "Design with Code",
+          "styles": { "fontSize": "48px", "fontWeight": "bold", "color": "#111827" }
+        },
+        "hero-image": {
+          "type": "image",
+          "name": "Hero Image",
+          "src": "https://example.com/hero.png",
+          "alt": "Hero banner",
+          "styles": { "width": "100%", "height": "400px", "borderRadius": "16px" }
+        },
+        "cta-button": {
+          "type": "component",
+          "name": "CTA Button",
+          "componentRef": "Button",
+          "props": { "text": "Get Started", "variant": "primary" },
+          "overrides": {},
+          "styles": {}
+        }
+      }
+    },
+    "page2": {
+      "name": "About",
+      "width": 1440,
+      "height": null,
+      "nodes": {
+        "root": {
+          "type": "frame",
+          "name": "Root",
+          "layout": { "direction": "column" },
+          "children": [],
+          "styles": {}
+        }
+      }
+    }
+  }
+}

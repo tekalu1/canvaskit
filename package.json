@@ -1,0 +1,70 @@
+{
+  "name": "@tekalu1/canvaskit",
+  "version": "0.1.0",
+  "description": "CLI-first MCP-native design canvas tool",
+  "type": "module",
+  "license": "MIT",
+  "author": "tekalu1 <tekalu.poppop@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tekalu1/canvaskit.git"
+  },
+  "homepage": "https://github.com/tekalu1/canvaskit#readme",
+  "bugs": {
+    "url": "https://github.com/tekalu1/canvaskit/issues"
+  },
+  "bin": {
+    "canvaskit": "./dist/index.js"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "schema",
+    "templates",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "serve": "node dist/index.js serve",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:unit": "vitest run tests/core tests/tools",
+    "test:e2e": "vitest run tests/e2e",
+    "prepublishOnly": "npm run build && npm test"
+  },
+  "keywords": [
+    "design",
+    "mcp",
+    "cli",
+    "tailwind",
+    "canvas",
+    "model-context-protocol",
+    "design-tool"
+  ],
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "chokidar": "^5.0.0",
+    "commander": "^13.1.0",
+    "express": "^4.21.2",
+    "zod": "^3.24.4"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^24.37.5"
+  },
+  "devDependencies": {
+    "@types/chokidar": "^1.7.5",
+    "@types/express": "^5.0.2",
+    "@types/node": "^22.15.3",
+    "@vitest/coverage-v8": "^4.0.18",
+    "typescript": "^5.8.3",
+    "vitest": "^4.0.18"
+  }
+}

@@ -1,0 +1,14 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Internal docs
+plan.md
+publish-plan.md
+
+# Local / temporary
+temporary/
+**/.claude/settings.local.json
+.git-backup/
+*.vsix

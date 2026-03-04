@@ -1,0 +1,418 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://canvaskit.dev/schema/v1.json",
+  "title": "CanvasKit Document",
+  "description": "Schema for .canvas.json files used by CanvasKit",
+  "type": "object",
+  "required": ["version", "meta", "pages"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "version": {
+      "type": "string",
+      "description": "Document schema version",
+      "default": "1.0.0"
+    },
+    "meta": {
+      "$ref": "#/definitions/Meta"
+    },
+    "tokens": {
+      "$ref": "#/definitions/Tokens"
+    },
+    "components": {
+      "type": "object",
+      "description": "Reusable component definitions",
+      "additionalProperties": {
+        "$ref": "#/definitions/ComponentDefinition"
+      },
+      "default": {}
+    },
+    "pages": {
+      "type": "object",
+      "description": "Pages keyed by page ID",
+      "additionalProperties": {
+        "$ref": "#/definitions/Page"
+      }
+    }
+  },
+  "definitions": {
+    "Meta": {
+      "type": "object",
+      "required": ["name", "created", "modified"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Document name"
+        },
+        "created": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 creation timestamp"
+        },
+        "modified": {
+          "type": "string",
+          "format": "date-time",
+          "description": "ISO 8601 last-modified timestamp"
+        }
+      }
+    },
+    "Tokens": {
+      "type": "object",
+      "properties": {
+        "colors": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueToken"
+          },
+          "default": {}
+        },
+        "spacing": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueToken"
+          },
+          "default": {}
+        },
+        "typography": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/TypographyToken"
+          },
+          "default": {}
+        },
+        "borderRadius": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueToken"
+          },
+          "default": {}
+        },
+        "shadows": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueToken"
+          },
+          "default": {}
+        },
+        "breakpoints": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/ValueToken"
+          },
+          "default": {}
+        }
+      },
+      "default": {}
+    },
+    "ValueToken": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "TypographyToken": {
+      "type": "object",
+      "required": ["fontFamily", "fontSize", "fontWeight", "lineHeight"],
+      "properties": {
+        "fontFamily": {
+          "type": "string"
+        },
+        "fontSize": {
+          "type": "string"
+        },
+        "fontWeight": {
+          "type": "string"
+        },
+        "lineHeight": {
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        }
+      }
+    },
+    "Page": {
+      "type": "object",
+      "required": ["name", "nodes"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Display name of the page"
+        },
+        "width": {
+          "type": "number",
+          "description": "Canvas width in pixels",
+          "default": 1440
+        },
+        "height": {
+          "type": ["number", "null"],
+          "description": "Canvas height in pixels (null for auto)",
+          "default": null
+        },
+        "nodes": {
+          "type": "object",
+          "description": "Flat map of node ID to node definition",
+          "additionalProperties": {
+            "$ref": "#/definitions/Node"
+          }
+        }
+      }
+    },
+    "Node": {
+      "type": "object",
+      "required": ["type", "name"],
+      "discriminator": {
+        "propertyName": "type"
+      },
+      "oneOf": [
+        { "$ref": "#/definitions/FrameNode" },
+        { "$ref": "#/definitions/TextNode" },
+        { "$ref": "#/definitions/ImageNode" },
+        { "$ref": "#/definitions/IconNode" },
+        { "$ref": "#/definitions/ComponentNode" },
+        { "$ref": "#/definitions/VectorNode" }
+      ]
+    },
+    "FrameNode": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "frame"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "layout": {
+          "$ref": "#/definitions/Layout"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Ordered list of child node IDs",
+          "default": []
+        }
+      }
+    },
+    "TextNode": {
+      "type": "object",
+      "required": ["type", "name", "content"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "text"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "content": {
+          "type": "string",
+          "description": "Text content"
+        }
+      }
+    },
+    "ImageNode": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "image"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "src": {
+          "type": "string",
+          "description": "Image source URL or path"
+        },
+        "alt": {
+          "type": "string",
+          "description": "Alt text for the image"
+        }
+      }
+    },
+    "IconNode": {
+      "type": "object",
+      "required": ["type", "name", "icon"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "icon"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "icon": {
+          "type": "string",
+          "description": "Icon reference (e.g. lucide:layers)"
+        }
+      }
+    },
+    "ComponentNode": {
+      "type": "object",
+      "required": ["type", "name", "componentRef"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "component"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "componentRef": {
+          "type": "string",
+          "description": "Reference to a component definition key"
+        },
+        "props": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "overrides": {
+          "type": "object",
+          "additionalProperties": true,
+          "default": {}
+        }
+      }
+    },
+    "VectorNode": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "vector"
+        },
+        "name": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "path": {
+          "type": "string",
+          "description": "SVG path data"
+        },
+        "viewBox": {
+          "type": "string",
+          "description": "SVG viewBox attribute"
+        }
+      }
+    },
+    "Layout": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": ["row", "column"],
+          "default": "column"
+        },
+        "gap": {
+          "type": "string",
+          "description": "Gap between children (CSS value or token ref)"
+        },
+        "align": {
+          "type": "string",
+          "description": "Cross-axis alignment"
+        },
+        "justify": {
+          "type": "string",
+          "description": "Main-axis alignment"
+        },
+        "wrap": {
+          "type": "boolean",
+          "description": "Whether children wrap"
+        }
+      }
+    },
+    "Styles": {
+      "type": "object",
+      "description": "CSS-like style properties. Values can be literal or token references like {colors.primary}.",
+      "additionalProperties": true
+    },
+    "ComponentDefinition": {
+      "type": "object",
+      "properties": {
+        "description": {
+          "type": "string"
+        },
+        "variants": {
+          "type": "object",
+          "description": "Named variants with property overrides",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": true
+          },
+          "default": {}
+        },
+        "props": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "List of prop names accepted by this component",
+          "default": []
+        },
+        "defaultProps": {
+          "type": "object",
+          "description": "Default values for component props",
+          "additionalProperties": true,
+          "default": {}
+        },
+        "template": {
+          "$ref": "#/definitions/ComponentTemplateNode",
+          "description": "Component template tree"
+        }
+      },
+      "default": {}
+    },
+    "ComponentTemplateNode": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "styles": {
+          "$ref": "#/definitions/Styles"
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ComponentTemplateNode"
+          }
+        }
+      }
+    }
+  }
+}
