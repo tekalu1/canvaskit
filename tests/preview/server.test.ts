@@ -112,6 +112,18 @@ describe("startPreviewServer", () => {
   });
 
   it("defaults to port 3456 when no port specified", async () => {
+    // Skip if port 3456 is already in use (e.g. another preview server running)
+    const net = await import("node:net");
+    const portFree = await new Promise<boolean>((resolve) => {
+      const srv = net.createServer();
+      srv.once("error", () => resolve(false));
+      srv.listen(3456, "127.0.0.1", () => srv.close(() => resolve(true)));
+    });
+    if (!portFree) {
+      console.warn("Skipping default port test: port 3456 already in use");
+      return;
+    }
+
     const doc = createDocumentWithNodes();
     activeServer = await startPreviewServer(doc, "page1");
 
