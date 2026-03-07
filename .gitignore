@@ -12,3 +12,4 @@ temporary/
 **/.claude/settings.local.json
 .git-backup/
 *.vsix
+vscode-extension/
