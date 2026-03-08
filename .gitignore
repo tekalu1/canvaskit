@@ -13,4 +13,3 @@ temporary/
 .claude/skills/
 .git-backup/
 *.vsix
-vscode-extension/
