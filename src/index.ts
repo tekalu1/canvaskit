@@ -1,7 +1,8 @@
 #!/usr/bin/env node
 import { Command } from "commander";
-import { resolve } from "node:path";
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { resolve, join, dirname, relative } from "node:path";
+import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
 import { CanvasManager } from "./core/canvas.js";
 import { TokenManager } from "./core/token.js";
 import {
@@ -608,6 +609,26 @@ function tokensToTailwindConfig(tokens: Tokens): string {
 
   return `/** @type {import('tailwindcss').Config} */\nexport default ${JSON.stringify(config, null, 2)};`;
 }
+
+// ── canvaskit install ──────────────────────────────────────
+program
+  .command("install")
+  .option("--skills", "install Claude Code skills to .claude/skills/canvaskit/")
+  .description("Install CanvasKit resources")
+  .action(async (opts: { skills?: boolean }) => {
+    const cwd = process.cwd();
+    if (opts.skills) {
+      const __filename = fileURLToPath(import.meta.url);
+      const pkgRoot = join(dirname(__filename), "..");
+      const srcDir = join(pkgRoot, "skill");
+      const destDir = join(cwd, ".claude", "skills", "canvaskit");
+      await mkdir(destDir, { recursive: true });
+      await cp(srcDir, destDir, { recursive: true });
+      console.log(`Skills installed to '${relative(cwd, destDir)}'.`);
+    } else {
+      console.log("Usage: canvaskit install --skills");
+    }
+  });
 
 registerNodeCommands(program);
 registerTokenCommands(program);

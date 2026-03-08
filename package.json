@@ -22,6 +22,7 @@
     "dist",
     "schema",
     "templates",
+    "skill",
     "README.md",
     "LICENSE"
   ],
@@ -38,6 +39,7 @@
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run tests/core tests/tools",
     "test:e2e": "vitest run tests/e2e",
+    "prepare": "node -e \"const fs=require('fs');fs.mkdirSync('.claude/skills/canvaskit',{recursive:true});fs.cpSync('skill','.claude/skills/canvaskit',{recursive:true})\"",
     "prepublishOnly": "npm run build && npm test"
   },
   "keywords": [

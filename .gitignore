@@ -10,6 +10,7 @@ publish-plan.md
 # Local / temporary
 temporary/
 **/.claude/settings.local.json
+.claude/skills/
 .git-backup/
 *.vsix
 vscode-extension/
