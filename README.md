@@ -12,6 +12,9 @@ npm run build
 ## Quick Start
 
 ```bash
+# Claude Code スキルをインストール (Claude Code 連携時)
+canvaskit install --skills
+
 # ドキュメント作成
 canvaskit init my-design
 
