@@ -620,7 +620,7 @@ program
     if (opts.skills) {
       const __filename = fileURLToPath(import.meta.url);
       const pkgRoot = join(dirname(__filename), "..");
-      const srcDir = join(pkgRoot, "skill");
+      const srcDir = join(pkgRoot, "skills", "canvaskit");
       const destDir = join(cwd, ".claude", "skills", "canvaskit");
       await mkdir(destDir, { recursive: true });
       await cp(srcDir, destDir, { recursive: true });

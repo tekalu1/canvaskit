@@ -60,8 +60,8 @@ describe("CLI install", () => {
 
       const destDir = join(tmpDir.path, ".claude", "skills", "canvaskit");
       expect(existsSync(join(destDir, "SKILL.md"))).toBe(true);
-      expect(existsSync(join(destDir, "docs", "cli.md"))).toBe(true);
-      expect(existsSync(join(destDir, "docs", "mcp.md"))).toBe(true);
+      expect(existsSync(join(destDir, "references", "cli.md"))).toBe(true);
+      expect(existsSync(join(destDir, "references", "mcp.md"))).toBe(true);
 
       // Verify content is not empty
       const skillContent = await readFile(join(destDir, "SKILL.md"), "utf-8");
