@@ -47,6 +47,28 @@ describe("PageManager", () => {
       expect(result.height).toBeNull();
     });
 
+    it("should update page x coordinate", () => {
+      const result = pages.update("page1", { x: 500 });
+
+      expect(result.x).toBe(500);
+      expect(result.y).toBe(0);
+      expect(result.name).toBe("Page 1");
+    });
+
+    it("should update page y coordinate", () => {
+      const result = pages.update("page1", { y: 300 });
+
+      expect(result.y).toBe(300);
+      expect(result.x).toBe(0);
+    });
+
+    it("should update both x and y coordinates", () => {
+      const result = pages.update("page1", { x: 100, y: 200 });
+
+      expect(result.x).toBe(100);
+      expect(result.y).toBe(200);
+    });
+
     it("should update multiple properties at once", () => {
       const result = pages.update("page1", {
         name: "Dashboard",
@@ -79,6 +101,8 @@ describe("PageManager", () => {
 
       expect(doc.data.pages["page1"]!.width).toBe(original.width);
       expect(doc.data.pages["page1"]!.height).toBe(original.height);
+      expect(doc.data.pages["page1"]!.x).toBe(original.x);
+      expect(doc.data.pages["page1"]!.y).toBe(original.y);
     });
   });
 
@@ -94,6 +118,8 @@ describe("PageManager", () => {
       expect(result[0].name).toBe("Page 1");
       expect(result[0].width).toBe(1440);
       expect(result[0].height).toBeNull();
+      expect(result[0].x).toBe(0);
+      expect(result[0].y).toBe(0);
       expect(result[0].nodeCount).toBe(1); // only root node
     });
 
@@ -102,6 +128,8 @@ describe("PageManager", () => {
         name: "Page 2",
         width: 768,
         height: 1024,
+        x: 100,
+        y: 200,
         nodes: {
           root: {
             type: "frame",
@@ -120,6 +148,8 @@ describe("PageManager", () => {
       expect(page2!.name).toBe("Page 2");
       expect(page2!.width).toBe(768);
       expect(page2!.height).toBe(1024);
+      expect(page2!.x).toBe(100);
+      expect(page2!.y).toBe(200);
     });
 
     it("should return correct node count", () => {

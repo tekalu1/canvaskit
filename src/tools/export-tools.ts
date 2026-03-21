@@ -1,1 +1,1 @@
-export { exportToHtml } from "../export/html.js";
+export { exportToHtml, exportToHtmlMultiPage } from "../export/html.js";

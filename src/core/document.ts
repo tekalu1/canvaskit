@@ -31,6 +31,8 @@ export class Document {
           name: "Page 1",
           width,
           height: null,
+          x: 0,
+          y: 0,
           nodes: {
             root: {
               type: "frame",

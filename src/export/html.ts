@@ -193,3 +193,69 @@ ${bodyContent}${lucideInitScript}
 </body>
 </html>`;
 }
+
+/**
+ * Export ALL pages from a Document as a multi-artboard HTML view.
+ * Each page is rendered in an artboard container positioned at its (x, y) coordinates.
+ */
+export function exportToHtmlMultiPage(doc: Document): string {
+  const tokens = doc.data.tokens;
+  const components = doc.data.components as Record<string, { template?: ComponentTemplateNode }>;
+  const pages = doc.data.pages;
+
+  // Check if any page uses icon nodes
+  let usesIcons = false;
+  for (const page of Object.values(pages)) {
+    if (hasIconNodes(page.nodes, 'root')) {
+      usesIcons = true;
+      break;
+    }
+  }
+
+  // Generate CSS custom properties
+  const cssProps = tokensToCssCustomProperties(tokens);
+  const hasCustomProps = cssProps !== ':root {\n}';
+  const styleBlock = hasCustomProps
+    ? `\n  <style>\n${cssProps.split('\n').map(l => `    ${l}`).join('\n')}\n  </style>`
+    : '';
+
+  const lucideHeadScript = usesIcons
+    ? `\n  <script src="https://unpkg.com/lucide@latest"></script>`
+    : '';
+  const lucideInitScript = usesIcons
+    ? `\n  <script>lucide.createIcons();</script>`
+    : '';
+
+  // Build artboard HTML for each page
+  const artboards: string[] = [];
+  for (const [pageId, page] of Object.entries(pages)) {
+    const bodyContent = renderNode('root', page.nodes, tokens, components, '        ');
+    const pageHeight = page.height ?? 'auto';
+    const heightStyle = pageHeight === 'auto' ? '' : `height:${pageHeight}px;`;
+
+    // Page name label (positioned above the artboard)
+    const labelHtml = `      <div class="__ck_artboard_label" style="position:absolute;top:-24px;left:0;font-size:12px;color:#666;font-family:system-ui,sans-serif;white-space:nowrap;cursor:grab;user-select:none;">${escapeHtml(page.name)}</div>`;
+
+    // Artboard container
+    artboards.push(
+      `    <div data-page-id="${escapeHtml(pageId)}" style="position:absolute;left:${page.x}px;top:${page.y}px;width:${page.width}px;${heightStyle}background:white;box-shadow:0 1px 3px rgba(0,0,0,0.12),0 1px 2px rgba(0,0,0,0.06);">\n${labelHtml}\n${bodyContent}\n    </div>`
+    );
+  }
+
+  const title = doc.data.meta.name;
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${escapeHtml(title)}</title>
+  <script src="https://cdn.tailwindcss.com"></script>${lucideHeadScript}${styleBlock}
+</head>
+<body>
+  <div style="position:relative;min-width:max-content;min-height:max-content;">
+${artboards.join('\n')}
+  </div>${lucideInitScript}
+</body>
+</html>`;
+}

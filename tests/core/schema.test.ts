@@ -357,6 +357,8 @@ describe("PageSchema", () => {
       name: "Home",
       width: 1440,
       height: null,
+      x: 0,
+      y: 0,
       nodes: {
         root: { type: "frame", name: "Root", children: [] },
       },
@@ -370,6 +372,53 @@ describe("PageSchema", () => {
       nodes: {},
     });
     expect(result.width).toBe(1440);
+  });
+
+  it("defaults x and y to 0", () => {
+    const result = PageSchema.parse({
+      name: "Defaults",
+      nodes: {},
+    });
+    expect(result.x).toBe(0);
+    expect(result.y).toBe(0);
+  });
+
+  it("accepts custom x and y coordinates", () => {
+    const result = PageSchema.parse({
+      name: "Positioned",
+      x: 500,
+      y: 300,
+      nodes: {},
+    });
+    expect(result.x).toBe(500);
+    expect(result.y).toBe(300);
+  });
+
+  it("accepts negative x and y coordinates", () => {
+    const result = PageSchema.parse({
+      name: "Negative",
+      x: -100,
+      y: -200,
+      nodes: {},
+    });
+    expect(result.x).toBe(-100);
+    expect(result.y).toBe(-200);
+  });
+
+  it("validates a page without x and y (backward compatibility)", () => {
+    const result = PageSchema.safeParse({
+      name: "Legacy",
+      width: 1440,
+      height: null,
+      nodes: {
+        root: { type: "frame", name: "Root", children: [] },
+      },
+    });
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data.x).toBe(0);
+      expect(result.data.y).toBe(0);
+    }
   });
 
   it("rejects a page missing name", () => {

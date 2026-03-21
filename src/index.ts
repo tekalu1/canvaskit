@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 import { Command } from "commander";
 import { resolve, join, dirname, relative } from "node:path";
-import { readFile, writeFile, mkdir, cp } from "node:fs/promises";
+import { readFile, writeFile, mkdir, cp, stat } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
 import { CanvasManager } from "./core/canvas.js";
 import { TokenManager } from "./core/token.js";
@@ -193,7 +193,7 @@ exportCmd
   .command("html")
   .argument("<file>", "path to .canvas.json file")
   .requiredOption("-o, --output <dir>", "output directory")
-  .option("--page <pageId>", "page ID to export (defaults to first page)")
+  .option("--page <pageId>", 'page ID to export (defaults to first page, use "all" for all pages)')
   .description("Export canvas to HTML + Tailwind")
   .action(async (file: string, opts: { output: string; page?: string }) => {
     try {
@@ -202,17 +202,39 @@ exportCmd
       const manager = new CanvasManager();
       const doc = await manager.open(filePath);
 
-      const pageId =
-        opts.page ?? Object.keys(doc.data.pages)[0] ?? "page1";
+      await mkdir(outputDir, { recursive: true })
 
-      const html = exportToHtml(doc, pageId);
+      if (opts.page === 'all') {
+        const pageIds = Object.keys(doc.data.pages)
+        if (pageIds.length === 0) {
+          console.error('[!] No pages found in document')
+          process.exit(1)
+        }
 
-      await mkdir(outputDir, { recursive: true });
-      const outputFile = `${outputDir}/index.html`;
-      await writeFile(outputFile, html, "utf-8");
+        const exported: Array<{ pageId: string; file: string }> = []
+        for (const pageId of pageIds) {
+          const html = exportToHtml(doc, pageId)
+          const outputFile = join(outputDir, `${pageId}.html`)
+          await writeFile(outputFile, html, 'utf-8')
+          exported.push({ pageId, file: outputFile })
+        }
 
-      console.log(`[+] Exported to ${outputDir}`);
-      console.log(`    index.html`);
+        console.log(`[+] Exported ${exported.length} pages to ${outputDir}`)
+        for (const e of exported) {
+          console.log(`    ${e.pageId}.html`)
+        }
+      } else {
+        const pageId =
+          opts.page ?? Object.keys(doc.data.pages)[0] ?? 'page1'
+
+        const html = exportToHtml(doc, pageId);
+
+        const outputFile = `${outputDir}/index.html`;
+        await writeFile(outputFile, html, "utf-8");
+
+        console.log(`[+] Exported to ${outputDir}`);
+        console.log(`    index.html`);
+      }
     } catch (err) {
       console.error(`[!] Export failed: ${(err as Error).message}`);
       process.exit(1);
@@ -224,7 +246,7 @@ exportCmd
   .command("vue")
   .argument("<file>", "path to .canvas.json file")
   .requiredOption("-o, --output <dir>", "output directory")
-  .option("--page <pageId>", "page ID to export (defaults to first page)")
+  .option("--page <pageId>", 'page ID to export (defaults to first page, use "all" for all pages)')
   .option("--no-typescript", "generate plain JavaScript instead of TypeScript")
   .description("Export canvas to Vue SFC files + Tailwind")
   .action(
@@ -238,21 +260,50 @@ exportCmd
         const manager = new CanvasManager();
         const doc = await manager.open(filePath);
 
-        const pageId =
-          opts.page ?? Object.keys(doc.data.pages)[0] ?? "page1";
+        await mkdir(outputDir, { recursive: true })
 
-        const result = exportToVueSfc(doc, pageId, undefined, {
-          typescript: opts.typescript,
-        });
+        if (opts.page === 'all') {
+          const pageIds = Object.keys(doc.data.pages)
+          if (pageIds.length === 0) {
+            console.error('[!] No pages found in document')
+            process.exit(1)
+          }
 
-        await mkdir(outputDir, { recursive: true });
-        for (const f of result.files) {
-          await writeFile(`${outputDir}/${f.path}`, f.content, "utf-8");
-        }
+          const allFiles: string[] = []
+          for (const pageId of pageIds) {
+            const pageDir = join(outputDir, pageId)
+            await mkdir(pageDir, { recursive: true })
 
-        console.log(`[+] Exported Vue SFC to ${outputDir}`);
-        for (const f of result.files) {
-          console.log(`    ${f.path}`);
+            const result = exportToVueSfc(doc, pageId, undefined, {
+              typescript: opts.typescript,
+            })
+
+            for (const f of result.files) {
+              await writeFile(join(pageDir, f.path), f.content, 'utf-8')
+              allFiles.push(`${pageId}/${f.path}`)
+            }
+          }
+
+          console.log(`[+] Exported Vue SFC for ${pageIds.length} pages to ${outputDir}`)
+          for (const f of allFiles) {
+            console.log(`    ${f}`)
+          }
+        } else {
+          const pageId =
+            opts.page ?? Object.keys(doc.data.pages)[0] ?? 'page1'
+
+          const result = exportToVueSfc(doc, pageId, undefined, {
+            typescript: opts.typescript,
+          });
+
+          for (const f of result.files) {
+            await writeFile(`${outputDir}/${f.path}`, f.content, "utf-8");
+          }
+
+          console.log(`[+] Exported Vue SFC to ${outputDir}`);
+          for (const f of result.files) {
+            console.log(`    ${f.path}`);
+          }
         }
       } catch (err) {
         console.error(`[!] Export failed: ${(err as Error).message}`);
@@ -266,7 +317,7 @@ exportCmd
   .command("react")
   .argument("<file>", "path to .canvas.json file")
   .requiredOption("-o, --output <dir>", "output directory")
-  .option("--page <pageId>", "page ID to export (defaults to first page)")
+  .option("--page <pageId>", 'page ID to export (defaults to first page, use "all" for all pages)')
   .option("--no-typescript", "generate plain JSX instead of TSX")
   .description("Export canvas to React JSX/TSX files + Tailwind")
   .action(
@@ -280,21 +331,50 @@ exportCmd
         const manager = new CanvasManager();
         const doc = await manager.open(filePath);
 
-        const pageId =
-          opts.page ?? Object.keys(doc.data.pages)[0] ?? "page1";
+        await mkdir(outputDir, { recursive: true })
 
-        const result = exportToReactJsx(doc, pageId, undefined, {
-          typescript: opts.typescript,
-        });
+        if (opts.page === 'all') {
+          const pageIds = Object.keys(doc.data.pages)
+          if (pageIds.length === 0) {
+            console.error('[!] No pages found in document')
+            process.exit(1)
+          }
 
-        await mkdir(outputDir, { recursive: true });
-        for (const f of result.files) {
-          await writeFile(`${outputDir}/${f.path}`, f.content, "utf-8");
-        }
+          const allFiles: string[] = []
+          for (const pageId of pageIds) {
+            const pageDir = join(outputDir, pageId)
+            await mkdir(pageDir, { recursive: true })
 
-        console.log(`[+] Exported React JSX to ${outputDir}`);
-        for (const f of result.files) {
-          console.log(`    ${f.path}`);
+            const result = exportToReactJsx(doc, pageId, undefined, {
+              typescript: opts.typescript,
+            })
+
+            for (const f of result.files) {
+              await writeFile(join(pageDir, f.path), f.content, 'utf-8')
+              allFiles.push(`${pageId}/${f.path}`)
+            }
+          }
+
+          console.log(`[+] Exported React JSX for ${pageIds.length} pages to ${outputDir}`)
+          for (const f of allFiles) {
+            console.log(`    ${f}`)
+          }
+        } else {
+          const pageId =
+            opts.page ?? Object.keys(doc.data.pages)[0] ?? 'page1'
+
+          const result = exportToReactJsx(doc, pageId, undefined, {
+            typescript: opts.typescript,
+          });
+
+          for (const f of result.files) {
+            await writeFile(`${outputDir}/${f.path}`, f.content, "utf-8");
+          }
+
+          console.log(`[+] Exported React JSX to ${outputDir}`);
+          for (const f of result.files) {
+            console.log(`    ${f.path}`);
+          }
         }
       } catch (err) {
         console.error(`[!] Export failed: ${(err as Error).message}`);
@@ -358,8 +438,8 @@ program
         const filePath = resolve(process.cwd(), file);
         const manager = new CanvasManager();
         const doc = await manager.open(filePath);
-        const pageId =
-          opts.page ?? Object.keys(doc.data.pages)[0] ?? "page1";
+        const pageId = opts.page ?? undefined;
+        const resolvedPageId = pageId ?? Object.keys(doc.data.pages)[0] ?? 'page1';
         const port = parseInt(opts.port, 10);
 
         const { startPreviewServer } = await import(
@@ -376,7 +456,8 @@ program
         });
 
         console.log(`[*] Preview server running at ${info.url}`);
-        console.log(`    Page: ${pageId}`);
+        console.log(`    Mode: ${pageId ? 'single-page' : 'multi-page (all artboards)'}`);
+        console.log(`    ${pageId ? `Page: ${pageId}` : `Pages: ${Object.keys(doc.data.pages).length}`}`);
         console.log(`    Watching: ${filePath}`);
         console.log(`    Press Ctrl+C to stop`);
 
@@ -400,7 +481,7 @@ program
   .command("screenshot")
   .argument("<file>", "path to .canvas.json file")
   .requiredOption("-o, --output <path>", "output file path (e.g., preview.png)")
-  .option("--page <pageId>", "page ID to screenshot (defaults to first page)")
+  .option("--page <pageId>", 'page ID to screenshot (defaults to first page, use "all" for all pages)')
   .option("--node <nodeId>", "specific node to screenshot")
   .option("--format <type>", "image format (png|jpeg)", "png")
   .option("--width <number>", "viewport width", "1440")
@@ -423,28 +504,79 @@ program
         const outputPath = resolve(process.cwd(), opts.output);
         const manager = new CanvasManager();
         const doc = await manager.open(filePath);
-        const pageId =
-          opts.page ?? Object.keys(doc.data.pages)[0] ?? "page1";
+        const format = opts.format as 'png' | 'jpeg'
 
         const { takeScreenshot } = await import(
           "./preview/screenshot.js"
         );
 
-        const result = await takeScreenshot(doc, pageId, opts.node, {
-          format: opts.format as "png" | "jpeg",
-          width: parseInt(opts.width, 10),
-          height: parseInt(opts.height, 10),
-        });
+        if (opts.page === 'all') {
+          // Screenshot all pages
+          const pageIds = Object.keys(doc.data.pages)
+          if (pageIds.length === 0) {
+            console.error('[!] No pages found in document')
+            process.exit(1)
+          }
 
-        await mkdir(resolve(outputPath, ".."), { recursive: true });
-        await writeFile(outputPath, result.buffer);
+          // Determine output directory
+          let outputDir: string
+          const isDir = opts.output.endsWith('/') || opts.output.endsWith('\\')
+          if (isDir) {
+            outputDir = outputPath
+          } else {
+            // Check if it's an existing directory
+            try {
+              const s = await stat(outputPath)
+              outputDir = s.isDirectory() ? outputPath : dirname(outputPath)
+            } catch {
+              outputDir = dirname(outputPath)
+            }
+          }
 
-        console.log(`[+] Screenshot saved to ${outputPath}`);
-        console.log(
-          `    Dimensions: ${result.width}x${result.height}`
-        );
-        console.log(`    Format: ${result.format}`);
-        console.log(`    Size: ${result.buffer.length} bytes`);
+          await mkdir(outputDir, { recursive: true })
+
+          const results: Array<{ pageId: string; file: string; width: number; height: number; size: number }> = []
+          for (const pageId of pageIds) {
+            const result = await takeScreenshot(doc, pageId, undefined, {
+              format,
+              width: parseInt(opts.width, 10),
+              height: parseInt(opts.height, 10),
+            })
+
+            const outFile = join(outputDir, `${pageId}.${format}`)
+            await writeFile(outFile, result.buffer)
+
+            results.push({
+              pageId,
+              file: outFile,
+              width: result.width,
+              height: result.height,
+              size: result.buffer.length,
+            })
+          }
+
+          console.log(JSON.stringify({ screenshots: results }, null, 2))
+        } else {
+          // Single page screenshot
+          const pageId =
+            opts.page ?? Object.keys(doc.data.pages)[0] ?? 'page1'
+
+          const result = await takeScreenshot(doc, pageId, opts.node, {
+            format,
+            width: parseInt(opts.width, 10),
+            height: parseInt(opts.height, 10),
+          });
+
+          await mkdir(resolve(outputPath, ".."), { recursive: true });
+          await writeFile(outputPath, result.buffer);
+
+          console.log(`[+] Screenshot saved to ${outputPath}`);
+          console.log(
+            `    Dimensions: ${result.width}x${result.height}`
+          );
+          console.log(`    Format: ${result.format}`);
+          console.log(`    Size: ${result.buffer.length} bytes`);
+        }
       } catch (err) {
         console.error(
           `[!] Screenshot failed: ${(err as Error).message}`

@@ -50,6 +50,8 @@ export function buildLandingPage(): CanvasDocument {
         name: "Landing Page",
         width: 1440,
         height: null,
+        x: 0,
+        y: 0,
         nodes: {
           // Root
           root: {

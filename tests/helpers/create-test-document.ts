@@ -142,6 +142,8 @@ export function buildRawDocument(
         name: "Page 1",
         width: 1440,
         height: null,
+        x: 0,
+        y: 0,
         nodes: {
           root: {
             type: "frame",

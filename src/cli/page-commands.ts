@@ -15,18 +15,41 @@ export function registerPageCommands(program: Command): void {
     .option("--name <name>", "page name")
     .option("--width <number>", "page width", "1440")
     .option("--height <number>", "page height (omit for auto)")
+    .option("--x <number>", "artboard X position")
+    .option("--y <number>", "artboard Y position")
     .description("Add a new page")
-    .action(async (file: string, opts: { id: string; name?: string; width: string; height?: string }) => {
+    .action(async (file: string, opts: { id: string; name?: string; width: string; height?: string; x?: string; y?: string }) => {
       try {
         const pageName = opts.name ?? opts.id;
         const width = parseInt(opts.width, 10);
         const height = opts.height ? parseInt(opts.height, 10) : null;
 
+        let x: number
+        let y: number
+
         await withDocument(file, (doc) => {
+          if (opts.x !== undefined) {
+            x = Number(opts.x)
+          } else {
+            // Auto-placement: maxX + maxWidth + 100
+            let autoX = 0
+            for (const page of Object.values(doc.data.pages)) {
+              const rightEdge = page.x + page.width
+              if (rightEdge > autoX) autoX = rightEdge
+            }
+            if (Object.keys(doc.data.pages).length > 0) {
+              autoX += 100
+            }
+            x = autoX
+          }
+          y = opts.y !== undefined ? Number(opts.y) : 0
+
           doc.addPage(opts.id, {
             name: pageName,
             width,
             height,
+            x,
+            y,
             nodes: {
               root: {
                 type: "frame" as const,
@@ -39,7 +62,7 @@ export function registerPageCommands(program: Command): void {
           });
         });
 
-        printJson({ added: { id: opts.id, name: pageName, width, height } });
+        printJson({ added: { id: opts.id, name: pageName, width, height, x: x!, y: y! } });
       } catch (err) {
         console.error(`[!] page add failed: ${(err as Error).message}`);
         process.exit(1);
@@ -54,9 +77,11 @@ export function registerPageCommands(program: Command): void {
     .option("--name <name>", "new page name")
     .option("--width <number>", "new page width")
     .option("--height <number>", "new page height (use 'null' to unset)")
+    .option("--x <number>", "artboard X position")
+    .option("--y <number>", "artboard Y position")
     .option("--stdin", "read update as JSON from stdin")
     .option("--screenshot [path]", "show screenshot inline, or save to path if given")
-    .description("Update page properties (name, width, height)")
+    .description("Update page properties (name, width, height, x, y)")
     .action(
       async (
         file: string,
@@ -65,12 +90,14 @@ export function registerPageCommands(program: Command): void {
           name?: string;
           width?: string;
           height?: string;
+          x?: string;
+          y?: string;
           stdin?: boolean;
           screenshot?: string | true;
         }
       ) => {
         try {
-          let updates: { name?: string; width?: number; height?: number | null };
+          let updates: { name?: string; width?: number; height?: number | null; x?: number; y?: number };
 
           if (opts.stdin) {
             const input = await readStdin();
@@ -82,6 +109,8 @@ export function registerPageCommands(program: Command): void {
             if (opts.height !== undefined) {
               updates.height = opts.height === "null" ? null : parseInt(opts.height, 10);
             }
+            if (opts.x !== undefined) updates.x = Number(opts.x);
+            if (opts.y !== undefined) updates.y = Number(opts.y);
           }
 
           let doc: import("../core/document.js").Document | undefined;

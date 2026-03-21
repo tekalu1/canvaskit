@@ -222,6 +222,8 @@ export const PageSchema = z.object({
   name: z.string(),
   width: z.number().default(1440),
   height: z.number().nullable().default(null),
+  x: z.number().default(0),
+  y: z.number().default(0),
   nodes: z.record(z.string(), NodeSchema),
 });
 

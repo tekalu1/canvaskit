@@ -18,6 +18,7 @@ export function getEditorUiScript(port: number): string {
 
   var API = '${apiBase}';
   var selectedNodeId = null;
+  var selectedPageId = null;
 
   // --- API helpers ---
   function apiPost(endpoint, body) {
@@ -169,15 +170,28 @@ export function getEditorUiScript(port: number): string {
     }
   });
 
+  // --- Helper: find the pageId for a given DOM element ---
+  function findPageId(el) {
+    while (el && el !== document.body) {
+      if (el.dataset && el.dataset.pageId) return el.dataset.pageId;
+      el = el.parentElement;
+    }
+    return null;
+  }
+
   // --- Listen for selection from overlay ---
   window.addEventListener('message', function(e) {
     var msg = e.data;
     if (!msg || typeof msg.type !== 'string') return;
     if (msg.type === 'canvaskit:nodeClicked') {
       selectedNodeId = msg.nodeId;
+      // Track page ID from the node element
+      var nodeEl = document.querySelector('[data-node-id="' + CSS.escape(msg.nodeId) + '"]');
+      selectedPageId = nodeEl ? findPageId(nodeEl) : null;
       showPropertyPanel(msg.nodeId);
     } else if (msg.type === 'canvaskit:selectionCleared') {
       selectedNodeId = null;
+      selectedPageId = null;
       hidePropertyPanel();
     }
   });
@@ -198,6 +212,7 @@ export function getEditorUiScript(port: number): string {
     while (el && el !== document.body) {
       if (el.dataset && el.dataset.nodeId) {
         selectedNodeId = el.dataset.nodeId;
+        selectedPageId = findPageId(el);
         showPropertyPanel(el.dataset.nodeId);
         return;
       }
@@ -205,6 +220,7 @@ export function getEditorUiScript(port: number): string {
     }
     // Clicked on empty space — clear
     selectedNodeId = null;
+    selectedPageId = null;
     hidePropertyPanel();
   }, true);
 
@@ -236,7 +252,7 @@ export function getEditorUiScript(port: number): string {
   // Add Text button
   toolbar.appendChild(createBtn('T+', 'Add Text Node', function() {
     var parentId = selectedNodeId || 'root';
-    apiPost('/node/add', {
+    var body = {
       nodes: [{
         type: 'text',
         name: 'New Text',
@@ -244,7 +260,9 @@ export function getEditorUiScript(port: number): string {
         content: 'New Text',
         styles: { fontSize: '16px', color: '#1e1e2e' }
       }]
-    }).then(function(r) {
+    };
+    if (selectedPageId) body.pageId = selectedPageId;
+    apiPost('/node/add', body).then(function(r) {
       if (r.error) ckAlert('Error: ' + r.error);
     });
   }));
@@ -252,7 +270,7 @@ export function getEditorUiScript(port: number): string {
   // Add Frame button
   toolbar.appendChild(createBtn('F+', 'Add Frame', function() {
     var parentId = selectedNodeId || 'root';
-    apiPost('/node/add', {
+    var body = {
       nodes: [{
         type: 'frame',
         name: 'New Frame',
@@ -260,7 +278,9 @@ export function getEditorUiScript(port: number): string {
         layout: { direction: 'column', gap: '8px' },
         styles: { padding: '16px', backgroundColor: '#f5f5f5' }
       }]
-    }).then(function(r) {
+    };
+    if (selectedPageId) body.pageId = selectedPageId;
+    apiPost('/node/add', body).then(function(r) {
       if (r.error) ckAlert('Error: ' + r.error);
     });
   }));
@@ -274,9 +294,11 @@ export function getEditorUiScript(port: number): string {
   toolbar.appendChild(createBtn('Del', 'Delete Selected', function() {
     if (!selectedNodeId) return;
     if (selectedNodeId === 'root') { ckAlert('Cannot delete root node'); return; }
-    apiPost('/node/delete', { nodeId: selectedNodeId }).then(function(r) {
+    var body = { nodeId: selectedNodeId };
+    if (selectedPageId) body.pageId = selectedPageId;
+    apiPost('/node/delete', body).then(function(r) {
       if (r.error) ckAlert('Error: ' + r.error);
-      else { selectedNodeId = null; hidePropertyPanel(); }
+      else { selectedNodeId = null; selectedPageId = null; hidePropertyPanel(); }
     });
   }));
 
@@ -303,6 +325,13 @@ export function getEditorUiScript(port: number): string {
   // Background / Canvas Settings button
   toolbar.appendChild(createBtn('BG', 'Canvas & Background Settings', function() {
     toggleBgPanel();
+  }));
+
+  // Add Artboard button (multi-page mode)
+  toolbar.appendChild(createBtn('A+', 'Add Artboard', function() {
+    apiPost('/page/add', {}).then(function(r) {
+      if (r.error) ckAlert('Error: ' + r.error);
+    });
   }));
 
   document.body.appendChild(toolbar);
@@ -585,8 +614,10 @@ export function getEditorUiScript(port: number): string {
     if (e.key === 'Delete' || e.key === 'Backspace') {
       if (selectedNodeId && selectedNodeId !== 'root') {
         e.preventDefault();
-        apiPost('/node/delete', { nodeId: selectedNodeId }).then(function(r) {
-          if (!r.error) { selectedNodeId = null; hidePropertyPanel(); }
+        var delBody = { nodeId: selectedNodeId };
+        if (selectedPageId) delBody.pageId = selectedPageId;
+        apiPost('/node/delete', delBody).then(function(r) {
+          if (!r.error) { selectedNodeId = null; selectedPageId = null; hidePropertyPanel(); }
         });
       }
     }
@@ -608,7 +639,9 @@ export function getEditorUiScript(port: number): string {
   }
 
   function showPropertyPanel(nodeId) {
-    apiGet('/node/' + encodeURIComponent(nodeId)).then(function(data) {
+    var url = '/node/' + encodeURIComponent(nodeId);
+    if (selectedPageId) url += '?pageId=' + encodeURIComponent(selectedPageId);
+    apiGet(url).then(function(data) {
       if (!data.ok || !data.node) { hidePropertyPanel(); return; }
       renderPropertyPanel(nodeId, data.node);
     });
@@ -625,15 +658,22 @@ export function getEditorUiScript(port: number): string {
       '</span><span style="color:#6c7086;font-size:11px;">[' + escHtml(node.type) + ']</span>';
     propsPanel.appendChild(header);
 
+    // Helper: build node update body with optional pageId
+    function nodeUpdateBody(updates) {
+      var body = { updates: updates };
+      if (selectedPageId) body.pageId = selectedPageId;
+      return body;
+    }
+
     // Name field
     addPropField('Name', node.name || '', function(val) {
-      apiPost('/node/update', { updates: [{ id: nodeId, name: val }] });
+      apiPost('/node/update', nodeUpdateBody([{ id: nodeId, name: val }]));
     });
 
     // Content (text nodes)
     if (node.type === 'text') {
       addPropField('Content', node.content || '', function(val) {
-        apiPost('/node/update', { updates: [{ id: nodeId, content: val }] });
+        apiPost('/node/update', nodeUpdateBody([{ id: nodeId, content: val }]));
       });
     }
 
@@ -650,7 +690,7 @@ export function getEditorUiScript(port: number): string {
           addPropField(prop, String(val), function(newVal) {
             var update = {};
             update[prop] = newVal;
-            apiPost('/node/update', { updates: [{ id: nodeId, styles: update }] });
+            apiPost('/node/update', nodeUpdateBody([{ id: nodeId, styles: update }]));
           });
         }
       })(styleProps[i]);
@@ -675,7 +715,7 @@ export function getEditorUiScript(port: number): string {
           if (!prop) return;
           var update = {};
           update[prop] = val;
-          apiPost('/node/update', { updates: [{ id: nodeId, styles: update }] }).then(function() {
+          apiPost('/node/update', nodeUpdateBody([{ id: nodeId, styles: update }])).then(function() {
             showPropertyPanel(nodeId);
           });
         }
@@ -694,7 +734,7 @@ export function getEditorUiScript(port: number): string {
             addPropField(prop, String(val), function(newVal) {
               var update = {};
               update[prop] = newVal === 'true' ? true : newVal === 'false' ? false : newVal;
-              apiPost('/node/update', { updates: [{ id: nodeId, layout: update }] });
+              apiPost('/node/update', nodeUpdateBody([{ id: nodeId, layout: update }]));
             });
           }
         })(layoutProps[j]);
@@ -755,29 +795,93 @@ export function getEditorUiScript(port: number): string {
     'display:none;min-width:160px;padding:4px 0;user-select:none;';
   document.body.appendChild(ctxMenu);
 
-  function showContextMenu(x, y, nodeId) {
+  function showContextMenu(x, y, nodeId, ctxPageId) {
     ctxMenu.innerHTML = '';
     ctxMenu.style.left = x + 'px';
     ctxMenu.style.top = y + 'px';
     ctxMenu.style.display = 'block';
 
+    var addBody = function(base) {
+      if (ctxPageId) base.pageId = ctxPageId;
+      return base;
+    };
+
     addMenuItem('Add Text Child', function() {
-      apiPost('/node/add', {
+      apiPost('/node/add', addBody({
         nodes: [{ type: 'text', name: 'Text', parentId: nodeId, content: 'Text' }]
-      });
+      }));
     });
     addMenuItem('Add Frame Child', function() {
-      apiPost('/node/add', {
+      apiPost('/node/add', addBody({
         nodes: [{ type: 'frame', name: 'Frame', parentId: nodeId, layout: { direction: 'column' } }]
-      });
+      }));
     });
 
     if (nodeId !== 'root') {
       addMenuSep();
       addMenuItem('Delete', function() {
-        apiPost('/node/delete', { nodeId: nodeId });
+        apiPost('/node/delete', addBody({ nodeId: nodeId }));
       });
     }
+  }
+
+  // Artboard-specific context menu
+  function showArtboardContextMenu(x, y, artboardPageId, artboardEl) {
+    ctxMenu.innerHTML = '';
+    ctxMenu.style.left = x + 'px';
+    ctxMenu.style.top = y + 'px';
+    ctxMenu.style.display = 'block';
+
+    addMenuItem('Rename Artboard', function() {
+      var labelEl = artboardEl.querySelector('.__ck_artboard_label');
+      var currentName = labelEl ? labelEl.textContent : '';
+      ckPrompt({
+        title: 'Rename Artboard',
+        fields: [{ label: 'Name', placeholder: 'Artboard name', value: currentName }],
+        onOk: function(values) {
+          if (!values[0]) return;
+          apiPost('/page/update', { pageId: artboardPageId, name: values[0] }).then(function(r) {
+            if (r.error) ckAlert('Error: ' + r.error);
+          });
+        }
+      });
+    });
+
+    addMenuItem('Resize Artboard', function() {
+      var currentW = artboardEl.style.width ? parseInt(artboardEl.style.width, 10) : 1440;
+      var currentH = artboardEl.style.height ? parseInt(artboardEl.style.height, 10) : '';
+      ckPrompt({
+        title: 'Resize Artboard',
+        fields: [
+          { label: 'Width', placeholder: 'e.g. 1440', value: String(currentW) },
+          { label: 'Height', placeholder: 'e.g. 900 (empty for auto)', value: String(currentH) }
+        ],
+        onOk: function(values) {
+          var w = parseInt(values[0], 10);
+          var h = values[1] ? parseInt(values[1], 10) : null;
+          if (isNaN(w) || w <= 0) { ckAlert('Invalid width'); return; }
+          if (h !== null && (isNaN(h) || h <= 0)) { ckAlert('Invalid height'); return; }
+          apiPost('/page/update', { pageId: artboardPageId, width: w, height: h }).then(function(r) {
+            if (r.error) ckAlert('Error: ' + r.error);
+          });
+        }
+      });
+    });
+
+    addMenuSep();
+
+    addMenuItem('Delete Artboard', function() {
+      showModal({
+        title: 'Delete Artboard',
+        message: 'Are you sure you want to delete this artboard? This cannot be undone.',
+        fields: [],
+        onOk: function() {
+          apiPost('/page/delete', { pageId: artboardPageId }).then(function(r) {
+            if (r.error) ckAlert('Error: ' + r.error);
+          });
+        }
+      });
+    });
   }
 
   function addMenuItem(label, onClick) {
@@ -809,6 +913,31 @@ export function getEditorUiScript(port: number): string {
     ctxMenu.style.display = 'none';
     ctxJustShown = false;
 
+    // Check if right-clicking on an artboard label or artboard container
+    var artboardEl = null;
+    var checkEl = e.target;
+    while (checkEl && checkEl !== document.body) {
+      if (checkEl.className === '__ck_artboard_label') {
+        artboardEl = checkEl.parentElement;
+        break;
+      }
+      if (checkEl.dataset && checkEl.dataset.pageId) {
+        artboardEl = checkEl;
+        break;
+      }
+      // If we hit a node element first, use the node context menu instead
+      if (checkEl.dataset && checkEl.dataset.nodeId) break;
+      checkEl = checkEl.parentElement;
+    }
+
+    if (artboardEl && artboardEl.dataset && artboardEl.dataset.pageId) {
+      e.preventDefault();
+      showArtboardContextMenu(e.clientX, e.clientY, artboardEl.dataset.pageId, artboardEl);
+      ctxJustShown = true;
+      setTimeout(function() { ctxJustShown = false; }, 0);
+      return;
+    }
+
     // Find closest node
     var el = e.target;
     while (el && el !== document.body) {
@@ -817,7 +946,8 @@ export function getEditorUiScript(port: number): string {
     }
     if (el && el.dataset && el.dataset.nodeId) {
       e.preventDefault();
-      showContextMenu(e.clientX, e.clientY, el.dataset.nodeId);
+      var ctxPageId = findPageId(el);
+      showContextMenu(e.clientX, e.clientY, el.dataset.nodeId, ctxPageId);
       ctxJustShown = true;
       // Reset flag after current event cycle completes
       setTimeout(function() { ctxJustShown = false; }, 0);
@@ -852,6 +982,7 @@ export function getEditorUiScript(port: number): string {
 
   var dragState = null;
   var resizeState = null;
+  var artboardDragState = null;
   var resizeHandles = [];
 
   // Create 8 resize handles (corners + edges)
@@ -942,6 +1073,26 @@ export function getEditorUiScript(port: number): string {
       target = target.parentElement;
     }
 
+    // Artboard label drag (move artboard)
+    if (e.target.className === '__ck_artboard_label') {
+      var abEl = e.target.parentElement;
+      if (abEl && abEl.dataset && abEl.dataset.pageId) {
+        e.preventDefault();
+        e.stopPropagation();
+        var abRect = abEl.getBoundingClientRect();
+        artboardDragState = {
+          pageId: abEl.dataset.pageId,
+          el: abEl,
+          startX: e.clientX,
+          startY: e.clientY,
+          origLeft: parseInt(abEl.style.left, 10) || 0,
+          origTop: parseInt(abEl.style.top, 10) || 0,
+          moved: false
+        };
+        return;
+      }
+    }
+
     if (!selectedNodeId || selectedNodeId === 'root') return;
     var el = document.querySelector('[data-node-id="' + CSS.escape(selectedNodeId) + '"]');
     if (!el) return;
@@ -965,6 +1116,22 @@ export function getEditorUiScript(port: number): string {
   }
 
   document.addEventListener('mousemove', function(e) {
+    // Artboard drag
+    if (artboardDragState) {
+      var dx = e.clientX - artboardDragState.startX;
+      var dy = e.clientY - artboardDragState.startY;
+      if (Math.abs(dx) > 3 || Math.abs(dy) > 3) {
+        artboardDragState.moved = true;
+        var s = getCanvasScale();
+        var newLeft = artboardDragState.origLeft + dx / s;
+        var newTop = artboardDragState.origTop + dy / s;
+        artboardDragState.el.style.left = Math.round(newLeft) + 'px';
+        artboardDragState.el.style.top = Math.round(newTop) + 'px';
+        artboardDragState.el.style.opacity = '0.8';
+      }
+      return;
+    }
+
     if (dragState) {
       var dx = e.clientX - dragState.startX;
       var dy = e.clientY - dragState.startY;
@@ -1005,6 +1172,24 @@ export function getEditorUiScript(port: number): string {
   });
 
   document.addEventListener('mouseup', function(e) {
+    // Artboard drag end
+    if (artboardDragState) {
+      if (artboardDragState.moved) {
+        artboardDragState.el.style.opacity = '';
+        var newX = parseInt(artboardDragState.el.style.left, 10) || 0;
+        var newY = parseInt(artboardDragState.el.style.top, 10) || 0;
+        apiPost('/page/update', {
+          pageId: artboardDragState.pageId,
+          x: newX,
+          y: newY
+        }).then(function(r) {
+          if (r.error) ckAlert('Error: ' + r.error);
+        });
+      }
+      artboardDragState = null;
+      return;
+    }
+
     if (dragState && dragState.moved) {
       // Find drop target
       var el = document.querySelector('[data-node-id="' + CSS.escape(dragState.nodeId) + '"]');
@@ -1030,10 +1215,12 @@ export function getEditorUiScript(port: number): string {
       }
 
       if (targetEl && targetEl.dataset && targetEl.dataset.nodeId) {
-        apiPost('/node/move', {
+        var moveBody = {
           nodeId: dragState.nodeId,
           newParentId: targetEl.dataset.nodeId
-        });
+        };
+        if (selectedPageId) moveBody.pageId = selectedPageId;
+        apiPost('/node/move', moveBody);
       }
     }
     dragState = null;
@@ -1048,9 +1235,11 @@ export function getEditorUiScript(port: number): string {
         if (newWidth) styles.width = newWidth;
         if (newHeight) styles.height = newHeight;
         if (Object.keys(styles).length > 0) {
-          apiPost('/node/update', {
+          var resizeBody = {
             updates: [{ id: resizeState.nodeId, styles: styles }]
-          });
+          };
+          if (selectedPageId) resizeBody.pageId = selectedPageId;
+          apiPost('/node/update', resizeBody);
         }
         // Reset inline styles that we set during resize preview
         el.style.width = '';

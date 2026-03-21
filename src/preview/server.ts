@@ -5,7 +5,8 @@ import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
 import type { Document } from "../core/document.js";
 import { NodeManager } from "../core/node.js";
-import { exportToHtml } from "../tools/export-tools.js";
+import { exportToHtml, exportToHtmlMultiPage } from "../tools/export-tools.js";
+import { PageManager } from "../core/page.js";
 import { getSelectionOverlayScript } from "./selection-overlay.js";
 import { getEditorUiScript } from "./editor-ui.js";
 import { getCanvasNavigationScript } from "./canvas-navigation.js";
@@ -70,16 +71,20 @@ function injectHotReload(html: string, port: number): string {
 /**
  * Start a local preview server for a canvas page.
  *
+ * When `pageId` is provided, renders a single page.
+ * When `pageId` is omitted or undefined, renders all pages in multi-artboard mode.
+ *
  * Returns server info including a `stop()` function to shut down.
  */
 export async function startPreviewServer(
   doc: Document,
-  pageId: string,
+  pageId?: string,
   nodeId?: string,
   options?: PreviewServerOptions
 ): Promise<PreviewServerInfo> {
   const port = options?.port ?? 3456;
   const enableEditorUi = options?.editorUi !== false;
+  const isMultiPage = !pageId;
   const app = express();
 
   let currentDoc = doc;
@@ -137,7 +142,9 @@ export async function startPreviewServer(
   // Main page endpoint
   app.get("/", (_req, res) => {
     try {
-      const html = exportToHtml(currentDoc, pageId, nodeId);
+      const html = isMultiPage
+        ? exportToHtmlMultiPage(currentDoc)
+        : exportToHtml(currentDoc, pageId!, nodeId);
       const withReload = injectHotReload(html, actualPort);
       // Inject order: navigation (wraps DOM) → overlay → editor UI
       const withNav = enableEditorUi
@@ -156,7 +163,140 @@ export async function startPreviewServer(
 
   // Health check
   app.get("/__canvaskit_health", (_req, res) => {
-    res.json({ status: "ok", pageId, port: actualPort });
+    res.json({ status: "ok", pageId: pageId ?? null, isMultiPage, port: actualPort });
+  });
+
+  // -------------------------------------------------------
+  // Helper: resolve effective pageId for node operations
+  // -------------------------------------------------------
+  function resolvePageId(bodyPageId?: string): string {
+    if (bodyPageId) return bodyPageId;
+    if (pageId) return pageId;
+    // Multi-page mode: use first page as default
+    const pageIds = Object.keys(currentDoc.data.pages);
+    if (pageIds.length === 0) throw new Error('No pages in document');
+    return pageIds[0]!;
+  }
+
+  // -------------------------------------------------------
+  // Phase 3: Page management REST API
+  // -------------------------------------------------------
+
+  // List pages
+  app.get("/__canvaskit_api/pages", (_req, res) => {
+    try {
+      const pm = new PageManager(currentDoc);
+      const pages = pm.list();
+      res.json({ ok: true, pages });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Add page
+  app.post("/__canvaskit_api/page/add", async (req, res) => {
+    try {
+      const { id, name, width, height, x, y } = req.body as {
+        id?: string;
+        name?: string;
+        width?: number;
+        height?: number | null;
+        x?: number;
+        y?: number;
+      };
+
+      const snapshot = snapshotForUndo();
+
+      // Generate a unique page ID
+      const { randomUUID } = await import('node:crypto');
+      const newId = id ?? `page-${randomUUID().slice(0, 8)}`;
+
+      // Auto-placement: find max x+width of existing pages, add 100px gap
+      let autoX = 0;
+      if (x === undefined) {
+        for (const p of Object.values(currentDoc.data.pages)) {
+          const right = p.x + p.width;
+          if (right > autoX) autoX = right;
+        }
+        if (Object.keys(currentDoc.data.pages).length > 0) {
+          autoX += 100;
+        }
+      }
+
+      const newPage = {
+        name: name ?? 'New Page',
+        width: width ?? 1440,
+        height: height ?? null,
+        x: x ?? autoX,
+        y: y ?? 0,
+        nodes: {
+          root: {
+            type: 'frame' as const,
+            name: 'Root',
+            clip: false,
+            layout: { direction: 'column' as const },
+            children: [] as string[],
+          },
+        },
+      };
+
+      currentDoc.addPage(newId, newPage);
+      pushUndo(undoStack, snapshot);
+      await saveAndReload();
+      res.json({ ok: true, page: { id: newId, ...newPage } });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Update page properties
+  app.post("/__canvaskit_api/page/update", async (req, res) => {
+    try {
+      const { pageId: targetPageId, name, width, height, x, y } = req.body as {
+        pageId: string;
+        name?: string;
+        width?: number;
+        height?: number | null;
+        x?: number;
+        y?: number;
+      };
+      if (!targetPageId) {
+        res.status(400).json({ error: "Missing 'pageId'" });
+        return;
+      }
+
+      const snapshot = snapshotForUndo();
+      const pm = new PageManager(currentDoc);
+      const result = pm.update(targetPageId, { name, width, height, x, y });
+      pushUndo(undoStack, snapshot);
+      await saveAndReload();
+      res.json({ ok: true, page: result });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      res.status(400).json({ error: message });
+    }
+  });
+
+  // Delete page
+  app.post("/__canvaskit_api/page/delete", async (req, res) => {
+    try {
+      const { pageId: targetPageId } = req.body as { pageId: string };
+      if (!targetPageId) {
+        res.status(400).json({ error: "Missing 'pageId'" });
+        return;
+      }
+
+      const snapshot = snapshotForUndo();
+      currentDoc.removePage(targetPageId);
+      pushUndo(undoStack, snapshot);
+      await saveAndReload();
+      res.json({ ok: true, deleted: targetPageId });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      res.status(400).json({ error: message });
+    }
   });
 
   // -------------------------------------------------------
@@ -166,7 +306,7 @@ export async function startPreviewServer(
   // Update nodes
   app.post("/__canvaskit_api/node/update", async (req, res) => {
     try {
-      const { updates } = req.body as {
+      const { updates, pageId: bodyPageId } = req.body as {
         updates: Array<{
           id?: string;
           nodeName?: string;
@@ -175,15 +315,17 @@ export async function startPreviewServer(
           styles?: Record<string, unknown>;
           layout?: Record<string, unknown>;
         }>;
+        pageId?: string;
       };
       if (!updates || !Array.isArray(updates)) {
         res.status(400).json({ error: "Missing 'updates' array" });
         return;
       }
 
+      const effectivePageId = resolvePageId(bodyPageId);
       const snapshot = snapshotForUndo();
       const nm = new NodeManager(currentDoc);
-      const ids = nm.update(pageId, updates);
+      const ids = nm.update(effectivePageId, updates);
       pushUndo(undoStack, snapshot);
       await saveAndReload();
       res.json({ ok: true, updated: ids });
@@ -196,7 +338,7 @@ export async function startPreviewServer(
   // Add nodes
   app.post("/__canvaskit_api/node/add", async (req, res) => {
     try {
-      const { nodes } = req.body as {
+      const { nodes, pageId: bodyPageId } = req.body as {
         nodes: Array<{
           type: string;
           name: string;
@@ -206,15 +348,17 @@ export async function startPreviewServer(
           styles?: Record<string, unknown>;
           layout?: Record<string, unknown>;
         }>;
+        pageId?: string;
       };
       if (!nodes || !Array.isArray(nodes)) {
         res.status(400).json({ error: "Missing 'nodes' array" });
         return;
       }
 
+      const effectivePageId = resolvePageId(bodyPageId);
       const snapshot = snapshotForUndo();
       const nm = new NodeManager(currentDoc);
-      const added = nm.add(pageId, nodes as Parameters<NodeManager["add"]>[1]);
+      const added = nm.add(effectivePageId, nodes as Parameters<NodeManager["add"]>[1]);
       pushUndo(undoStack, snapshot);
       await saveAndReload();
       res.json({ ok: true, added });
@@ -227,15 +371,19 @@ export async function startPreviewServer(
   // Delete node
   app.post("/__canvaskit_api/node/delete", async (req, res) => {
     try {
-      const { nodeId: delNodeId } = req.body as { nodeId: string };
+      const { nodeId: delNodeId, pageId: bodyPageId } = req.body as {
+        nodeId: string;
+        pageId?: string;
+      };
       if (!delNodeId) {
         res.status(400).json({ error: "Missing 'nodeId'" });
         return;
       }
 
+      const effectivePageId = resolvePageId(bodyPageId);
       const snapshot = snapshotForUndo();
       const nm = new NodeManager(currentDoc);
-      nm.delete(pageId, delNodeId);
+      nm.delete(effectivePageId, delNodeId);
       pushUndo(undoStack, snapshot);
       await saveAndReload();
       res.json({ ok: true, deleted: delNodeId });
@@ -248,19 +396,21 @@ export async function startPreviewServer(
   // Move node
   app.post("/__canvaskit_api/node/move", async (req, res) => {
     try {
-      const { nodeId: moveNodeId, newParentId, index } = req.body as {
+      const { nodeId: moveNodeId, newParentId, index, pageId: bodyPageId } = req.body as {
         nodeId: string;
         newParentId: string;
         index?: number;
+        pageId?: string;
       };
       if (!moveNodeId || !newParentId) {
         res.status(400).json({ error: "Missing 'nodeId' or 'newParentId'" });
         return;
       }
 
+      const effectivePageId = resolvePageId(bodyPageId);
       const snapshot = snapshotForUndo();
       const nm = new NodeManager(currentDoc);
-      nm.move(pageId, moveNodeId, newParentId, index);
+      nm.move(effectivePageId, moveNodeId, newParentId, index);
       pushUndo(undoStack, snapshot);
       await saveAndReload();
       res.json({ ok: true, moved: moveNodeId });
@@ -273,8 +423,9 @@ export async function startPreviewServer(
   // Get node info
   app.get("/__canvaskit_api/node/:nodeId", (req, res) => {
     try {
+      const effectivePageId = resolvePageId(req.query.pageId as string | undefined);
       const nm = new NodeManager(currentDoc);
-      const node = nm.get(pageId, req.params.nodeId);
+      const node = nm.get(effectivePageId, req.params.nodeId);
       if (!node) {
         res.status(404).json({ error: "Node not found" });
         return;
@@ -289,8 +440,9 @@ export async function startPreviewServer(
   // List nodes
   app.get("/__canvaskit_api/nodes", (req, res) => {
     try {
+      const effectivePageId = resolvePageId(req.query.pageId as string | undefined);
       const nm = new NodeManager(currentDoc);
-      const nodes = nm.list(pageId);
+      const nodes = nm.list(effectivePageId);
       res.json({ ok: true, nodes });
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);

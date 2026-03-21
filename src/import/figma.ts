@@ -154,6 +154,8 @@ export function convertFigmaFile(
       name: figmaPage.name,
       width,
       height: null,
+      x: 0,
+      y: 0,
       nodes,
     });
 
