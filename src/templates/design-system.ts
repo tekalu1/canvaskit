@@ -1345,87 +1345,33 @@ export function buildDesignSystem(): CanvasDocument {
       breakpoints: {},
     },
     components: {},
-    pages: {
-      page1: {
-        name: "Color Palette",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildColorPalettePage() as any,
-      },
-      page2: {
-        name: "Typography",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildTypographyPage() as any,
-      },
-      page3: {
-        name: "Spacing & Sizing",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildSpacingPage() as any,
-      },
-      page4: {
-        name: "Border Radius & Shadows",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildBorderRadiusShadowsPage() as any,
-      },
-      page5: {
-        name: "Icons",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildIconsPage() as any,
-      },
-      page6: {
-        name: "Buttons",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildButtonsPage() as any,
-      },
-      page7: {
-        name: "Form Elements",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildFormElementsPage() as any,
-      },
-      page8: {
-        name: "Cards",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildCardsPage() as any,
-      },
-      page9: {
-        name: "Navigation",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildNavigationPage() as any,
-      },
-      page10: {
-        name: "Feedback",
-        width: 1440,
-        height: null,
-        x: 0,
-        y: 0,
-        nodes: buildFeedbackPage() as any,
-      },
-    },
+    pages: (() => {
+      const PAGE_W = 1440;
+      const PAGE_GAP = 100;
+      const pageDefs: Array<[string, string, () => Record<string, Record<string, unknown>>]> = [
+        ["page1", "Color Palette", buildColorPalettePage],
+        ["page2", "Typography", buildTypographyPage],
+        ["page3", "Spacing & Sizing", buildSpacingPage],
+        ["page4", "Border Radius & Shadows", buildBorderRadiusShadowsPage],
+        ["page5", "Icons", buildIconsPage],
+        ["page6", "Buttons", buildButtonsPage],
+        ["page7", "Form Elements", buildFormElementsPage],
+        ["page8", "Cards", buildCardsPage],
+        ["page9", "Navigation", buildNavigationPage],
+        ["page10", "Feedback", buildFeedbackPage],
+      ];
+      const pages: Record<string, any> = {};
+      pageDefs.forEach(([id, name, buildFn], i) => {
+        pages[id] = {
+          name,
+          width: PAGE_W,
+          height: null,
+          x: i * (PAGE_W + PAGE_GAP),
+          y: 0,
+          nodes: buildFn() as any,
+        };
+      });
+      return pages;
+    })(),
   };
 }

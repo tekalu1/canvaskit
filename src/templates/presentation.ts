@@ -661,17 +661,23 @@ function buildEndSlide(): Record<string, Record<string, unknown>> {
 export function buildPresentation(): CanvasDocument {
   const now = new Date().toISOString();
 
+  const PAGE_GAP = 100;
+  let slideIndex = 0;
   const makeSlide = (
     name: string,
     buildFn: () => Record<string, Record<string, unknown>>,
-  ) => ({
-    name,
-    width: SLIDE_W,
-    height: SLIDE_H,
-    x: 0,
-    y: 0,
-    nodes: buildFn() as any,
-  });
+  ) => {
+    const x = slideIndex * (SLIDE_W + PAGE_GAP);
+    slideIndex++;
+    return {
+      name,
+      width: SLIDE_W,
+      height: SLIDE_H,
+      x,
+      y: 0,
+      nodes: buildFn() as any,
+    };
+  };
 
   return {
     version: "1.0.0",
