@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
-import { convertFigmaFile, type FigmaImportOptions } from "../../src/import/figma.js";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { convertFigmaFile, fetchFigmaFile, importFromFigma, type FigmaImportOptions } from "../../src/import/figma.js";
 import type { FigmaFile } from "../../src/import/figma-mapper.js";
 
 /**
@@ -160,5 +160,132 @@ describe("convertFigmaFile", () => {
     const result = convertFigmaFile(figmaFile);
     const json = result.document.toJSON(true);
     expect(() => JSON.parse(json)).not.toThrow();
+  });
+
+  it("sets page width from absoluteBoundingBox", () => {
+    const figmaFile = buildTestFigmaFile();
+    const result = convertFigmaFile(figmaFile);
+    const page = result.document.data.pages["page1"]!;
+    expect(page.width).toBe(1440);
+  });
+
+  it("defaults page width to 1440 when no boundingBox", () => {
+    const figmaFile = buildTestFigmaFile();
+    figmaFile.document.children = [
+      { id: "1:1", name: "NoBounds", type: "CANVAS", children: [] },
+    ];
+    const result = convertFigmaFile(figmaFile);
+    const page = result.document.data.pages["page1"]!;
+    expect(page.width).toBe(1440);
+  });
+
+  it("handles file with no components field", () => {
+    const figmaFile = buildTestFigmaFile();
+    delete (figmaFile as any).components;
+    const result = convertFigmaFile(figmaFile, { importComponents: true });
+    expect(result.components).toBe(0);
+  });
+});
+
+// ============================================================
+// fetchFigmaFile
+// ============================================================
+describe("fetchFigmaFile", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("fetches a file from Figma API", async () => {
+    const mockFile: FigmaFile = buildTestFigmaFile();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockFile),
+    }) as any;
+
+    const result = await fetchFigmaFile("abc123", "token-xyz");
+    expect(result.name).toBe("Test Design");
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api.figma.com/v1/files/abc123",
+      { headers: { "X-Figma-Token": "token-xyz" } }
+    );
+  });
+
+  it("appends node IDs as query params", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(buildTestFigmaFile()),
+    }) as any;
+
+    await fetchFigmaFile("abc123", "token-xyz", ["1:1", "2:2"]);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api.figma.com/v1/files/abc123?ids=1:1,2:2",
+      expect.any(Object)
+    );
+  });
+
+  it("throws on non-OK response", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      text: () => Promise.resolve("Forbidden"),
+    }) as any;
+
+    await expect(fetchFigmaFile("abc123", "bad-token")).rejects.toThrow(
+      "Figma API error (403): Forbidden"
+    );
+  });
+});
+
+// ============================================================
+// importFromFigma
+// ============================================================
+describe("importFromFigma", () => {
+  const originalFetch = globalThis.fetch;
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("fetches and converts a Figma file", async () => {
+    const mockFile: FigmaFile = buildTestFigmaFile();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockFile),
+    }) as any;
+
+    const result = await importFromFigma("file-key", "token");
+    expect(result.pages).toBe(1);
+    expect(result.nodes).toBeGreaterThan(0);
+    expect(result.document).toBeDefined();
+  });
+
+  it("passes options through to convertFigmaFile", async () => {
+    const mockFile: FigmaFile = buildTestFigmaFile();
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(mockFile),
+    }) as any;
+
+    const result = await importFromFigma("file-key", "token", undefined, {
+      extractTokens: false,
+      importComponents: false,
+    });
+    expect(result.tokens).toBe(0);
+    expect(result.components).toBe(0);
+  });
+
+  it("passes nodeIds to fetchFigmaFile", async () => {
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve(buildTestFigmaFile()),
+    }) as any;
+
+    await importFromFigma("file-key", "token", ["1:1"]);
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("?ids=1:1"),
+      expect.any(Object)
+    );
   });
 });

@@ -285,6 +285,232 @@ describe("mapFigmaNode", () => {
     const id2 = mapFigmaNode({ id: "b", name: "B", type: "TEXT", characters: "b" }, nodes, {});
     expect(id1).not.toBe(id2);
   });
+
+  it("maps linear gradient fill to gradient property", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "g1",
+      name: "GradientFrame",
+      type: "FRAME",
+      fills: [
+        {
+          type: "GRADIENT_LINEAR",
+          gradientHandlePositions: [
+            { x: 0, y: 0.5 },
+            { x: 1, y: 0.5 },
+          ],
+          gradientStops: [
+            { color: { r: 1, g: 0, b: 0, a: 1 }, position: 0 },
+            { color: { r: 0, g: 0, b: 1, a: 1 }, position: 1 },
+          ],
+        },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.gradient).toBeDefined();
+    expect(node.gradient.type).toBe("linear");
+    expect(node.gradient.colors).toHaveLength(2);
+    // Should not have backgroundColor since gradient takes priority
+    expect(node.styles.backgroundColor).toBeUndefined();
+  });
+
+  it("maps radial gradient fill", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "g2",
+      name: "RadialFrame",
+      type: "FRAME",
+      fills: [
+        {
+          type: "GRADIENT_RADIAL",
+          gradientStops: [
+            { color: { r: 1, g: 1, b: 0, a: 1 }, position: 0 },
+            { color: { r: 0, g: 1, b: 0, a: 1 }, position: 1 },
+          ],
+        },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.gradient).toBeDefined();
+    expect(node.gradient.type).toBe("radial");
+  });
+
+  it("ignores gradient fill with fewer than 2 stops", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "g3",
+      name: "BadGradient",
+      type: "FRAME",
+      fills: [
+        {
+          type: "GRADIENT_LINEAR",
+          gradientStops: [
+            { color: { r: 1, g: 0, b: 0, a: 1 }, position: 0 },
+          ],
+        },
+        { type: "SOLID", color: { r: 0, g: 0, b: 0, a: 1 } },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    // Should fall back to backgroundColor since gradient was invalid
+    expect(node.gradient).toBeUndefined();
+    expect(node.styles.backgroundColor).toBe("#000000");
+  });
+
+  it("gradient takes priority over solid fill", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "g4",
+      name: "GradientPriority",
+      type: "FRAME",
+      fills: [
+        {
+          type: "GRADIENT_LINEAR",
+          gradientStops: [
+            { color: { r: 1, g: 0, b: 0, a: 1 }, position: 0 },
+            { color: { r: 0, g: 0, b: 1, a: 1 }, position: 1 },
+          ],
+        },
+        { type: "SOLID", color: { r: 1, g: 1, b: 1, a: 1 } },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.gradient).toBeDefined();
+    expect(node.styles.backgroundColor).toBeUndefined();
+  });
+
+  it("maps asymmetric padding (paddingX and paddingY)", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "p1",
+      name: "AsymPadded",
+      type: "FRAME",
+      paddingLeft: 20,
+      paddingRight: 20,
+      paddingTop: 10,
+      paddingBottom: 10,
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const styles = nodes[id]!.styles as Record<string, unknown>;
+    expect(styles.paddingX).toBe("20px");
+    expect(styles.paddingY).toBe("10px");
+    expect(styles.padding).toBeUndefined();
+  });
+
+  it("maps INSTANCE without componentId uses name as fallback", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "i2",
+      name: "FallbackButton",
+      type: "INSTANCE",
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.type).toBe("component");
+    expect(node.componentRef).toBe("FallbackButton");
+  });
+
+  it("maps INSTANCE with unknown componentId uses name as fallback", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const componentMap = { "comp-1": "Button" };
+    const figmaNode: FigmaNode = {
+      id: "i3",
+      name: "UnknownComp",
+      type: "INSTANCE",
+      componentId: "comp-unknown",
+    };
+    const id = mapFigmaNode(figmaNode, nodes, componentMap);
+    const node = nodes[id] as any;
+    expect(node.componentRef).toBe("UnknownComp");
+  });
+
+  it("maps BOOLEAN_OPERATION to vector node", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "b1",
+      name: "BoolOp",
+      type: "BOOLEAN_OPERATION",
+      absoluteBoundingBox: { x: 0, y: 0, width: 48, height: 48 },
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    expect(nodes[id]!.type).toBe("vector");
+    expect((nodes[id] as any).viewBox).toBe("0 0 48 48");
+  });
+
+  it("maps GROUP with children to frame", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "grp1",
+      name: "MyGroup",
+      type: "GROUP",
+      children: [
+        { id: "t1", name: "Text", type: "TEXT", characters: "Inside" },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.type).toBe("frame");
+    expect(node.children).toHaveLength(1);
+  });
+
+  it("maps SECTION to frame", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "sec1",
+      name: "Section",
+      type: "SECTION",
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    expect(nodes[id]!.type).toBe("frame");
+  });
+
+  it("maps linear gradient without handle positions uses default angle", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "g5",
+      name: "NoHandles",
+      type: "FRAME",
+      fills: [
+        {
+          type: "GRADIENT_LINEAR",
+          gradientStops: [
+            { color: { r: 1, g: 0, b: 0, a: 1 }, position: 0 },
+            { color: { r: 0, g: 0, b: 1, a: 1 }, position: 1 },
+          ],
+        },
+      ],
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.gradient.angle).toBe(180);
+  });
+
+  it("maps TEXT node with no characters to empty content", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "t2",
+      name: "EmptyText",
+      type: "TEXT",
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    const node = nodes[id] as any;
+    expect(node.content).toBe("");
+  });
+
+  it("maps VECTOR without bounding box uses default viewBox", () => {
+    const nodes: Record<string, CanvasNode> = {};
+    const figmaNode: FigmaNode = {
+      id: "v2",
+      name: "NoBoundsVec",
+      type: "VECTOR",
+    };
+    const id = mapFigmaNode(figmaNode, nodes, {});
+    expect((nodes[id] as any).viewBox).toBe("0 0 24 24");
+  });
 });
 
 // ============================================================
