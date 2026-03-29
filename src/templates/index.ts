@@ -1,5 +1,7 @@
 import type { CanvasDocument } from "../core/schema.js";
+import { buildDesignSystem } from "./design-system.js";
 import { buildLandingPage } from "./landing.js";
+import { buildPresentation } from "./presentation.js";
 
 export interface Template {
   name: string;
@@ -29,4 +31,16 @@ registerTemplate({
   name: "landing",
   description: "Landing page with navbar, hero, features, and CTA sections",
   build: buildLandingPage,
+});
+
+registerTemplate({
+  name: "design-system",
+  description: "Design system documentation with color palette, typography, components, and more",
+  build: buildDesignSystem,
+});
+
+registerTemplate({
+  name: "presentation",
+  description: "Presentation slides with 16:9 layout, charts, tables, and flowcharts",
+  build: buildPresentation,
 });
