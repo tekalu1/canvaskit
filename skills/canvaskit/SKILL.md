@@ -12,8 +12,11 @@ argument-hint: [command]
 ## Quick Start
 
 ```bash
-# テンプレートからランディングページを構築
-canvaskit init my-landing --template landing
+# テンプレートから構築 (3種類)
+canvaskit init my-landing --template landing          # ランディングページ
+canvaskit init my-ds --template design-system         # デザインシステム (10ページ)
+canvaskit init my-slides --template presentation      # プレゼンテーション (12スライド, 1920x1080)
+canvaskit init --list-templates                       # テンプレート一覧
 canvaskit screenshot my-landing.canvas.json -o preview.png
 
 # 空のドキュメントから構築
