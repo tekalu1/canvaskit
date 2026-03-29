@@ -94,15 +94,15 @@ function buildCoverSlide(): Record<string, Record<string, unknown>> {
       color: "{colors.text}",
     }),
     makeText("cover-subtitle", "Slide Subtitle", "A subtitle for context", {
-      fontSize: "24px",
+      fontSize: "36px",
       color: "{colors.text-muted}",
     }),
     makeText("cover-date", "Date", "2026-01-01", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
     makeText("cover-presenter", "Presenter", "Presenter Name", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
   ]);
@@ -140,7 +140,7 @@ function buildTocSlide(): Record<string, Record<string, unknown>> {
   for (let i = 0; i < items.length; i++) {
     nodes.push(
       makeText(`toc-item-${i + 1}`, `TOC Item ${i + 1}`, items[i], {
-        fontSize: "24px",
+        fontSize: "36px",
         color: "{colors.text}",
       }),
     );
@@ -170,7 +170,7 @@ function buildSectionDividerSlide(): Record<string, Record<string, unknown>> {
       color: "{colors.white}",
     }),
     makeText("sec-subtitle", "Section Subtitle", "Brief description of this section", {
-      fontSize: "24px",
+      fontSize: "36px",
       color: "{colors.white}",
     }),
   ]);
@@ -215,11 +215,11 @@ function buildBulletListSlide(): Record<string, Record<string, unknown>> {
         styles: { width: "100%" },
       }),
       makeText(bulletId, `Bullet ${i + 1}`, "\u30FB", {
-        fontSize: "24px",
+        fontSize: "36px",
         color: "{colors.accent}",
       }),
       makeText(textId, `Bullet Text ${i + 1}`, bulletItems[i], {
-        fontSize: "24px",
+        fontSize: "36px",
         color: "{colors.text}",
       }),
     );
@@ -251,12 +251,12 @@ function buildTwoColumnSlide(): Record<string, Record<string, unknown>> {
       styles: { width: "50%" },
     }),
     makeText("tc-left-title", "Left Title", "Left Column", {
-      fontSize: "24px",
+      fontSize: "36px",
       fontWeight: "semibold",
       color: "{colors.text}",
     }),
     makeText("tc-left-text", "Left Text", "Content for the left side of the layout.", {
-      fontSize: "18px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
     makeFrame("tc-right", {
@@ -266,12 +266,12 @@ function buildTwoColumnSlide(): Record<string, Record<string, unknown>> {
       styles: { width: "50%" },
     }),
     makeText("tc-right-title", "Right Title", "Right Column", {
-      fontSize: "24px",
+      fontSize: "36px",
       fontWeight: "semibold",
       color: "{colors.text}",
     }),
     makeText("tc-right-text", "Right Text", "Content for the right side of the layout.", {
-      fontSize: "18px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
   ]);
@@ -304,7 +304,7 @@ function buildImageTextSlide(): Record<string, Record<string, unknown>> {
       height: "48px",
     }),
     makeText("it-image-label", "Image Label", "Image placeholder", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
     makeFrame("it-text-area", {
@@ -319,7 +319,7 @@ function buildImageTextSlide(): Record<string, Record<string, unknown>> {
       color: "{colors.text}",
     }),
     makeText("it-description", "Image Slide Description", "A description that accompanies the image on the left. Replace the placeholder with your own visual content.", {
-      fontSize: "18px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
       lineHeight: "1.6",
     }),
@@ -355,7 +355,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
   for (let i = 0; i < headerCols.length; i++) {
     nodes.push(
       makeText(`tb-th-${i + 1}`, `Header ${i + 1}`, headerCols[i], {
-        fontSize: "20px",
+        fontSize: "28px",
         fontWeight: "semibold",
         color: "{colors.text}",
         padding: "16px",
@@ -384,7 +384,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
     for (let c = 0; c < dataRows[r].length; c++) {
       nodes.push(
         makeText(`tb-td-${r + 1}-${c + 1}`, `Cell ${r + 1}-${c + 1}`, dataRows[r][c], {
-          fontSize: "20px",
+          fontSize: "28px",
           color: "{colors.text}",
           padding: "16px",
           width: "33%",
@@ -450,7 +450,7 @@ function buildFlowchartSlide(): Record<string, Record<string, unknown>> {
       },
     }),
     makeText("fc-step-1-text", "Step 1 Text", "Research", {
-      fontSize: "20px",
+      fontSize: "28px",
       fontWeight: "semibold",
       color: "{colors.text}",
     }),
@@ -473,7 +473,7 @@ function buildFlowchartSlide(): Record<string, Record<string, unknown>> {
       },
     }),
     makeText("fc-step-2-text", "Step 2 Text", "Design", {
-      fontSize: "20px",
+      fontSize: "28px",
       fontWeight: "semibold",
       color: "{colors.text}",
     }),
@@ -496,7 +496,7 @@ function buildFlowchartSlide(): Record<string, Record<string, unknown>> {
       },
     }),
     makeText("fc-step-3-text", "Step 3 Text", "Deliver", {
-      fontSize: "20px",
+      fontSize: "28px",
       fontWeight: "semibold",
       color: "{colors.text}",
     }),
@@ -543,7 +543,7 @@ function buildChartSlide(): Record<string, Record<string, unknown>> {
         styles: {},
       }),
       makeText(valueId, `Value ${b.label}`, b.value, {
-        fontSize: "20px",
+        fontSize: "28px",
         fontWeight: "semibold",
         color: "{colors.text}",
       }),
@@ -559,7 +559,7 @@ function buildChartSlide(): Record<string, Record<string, unknown>> {
         },
       }),
       makeText(labelId, `Label ${b.label}`, b.label, {
-        fontSize: "20px",
+        fontSize: "28px",
         color: "{colors.text-muted}",
       }),
     );
@@ -580,7 +580,7 @@ function buildQuoteSlide(): Record<string, Record<string, unknown>> {
       width: "100%",
     }),
     makeText("qt-source", "Quote Source", "\u2014 Peter Drucker", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
       width: "100%",
     }),
@@ -617,7 +617,7 @@ function buildSummarySlide(): Record<string, Record<string, unknown>> {
   for (let i = 0; i < points.length; i++) {
     nodes.push(
       makeText(`sm-point-${i + 1}`, `Key Point ${i + 1}`, points[i], {
-        fontSize: "24px",
+        fontSize: "36px",
         color: "{colors.text}",
       }),
     );
@@ -647,11 +647,11 @@ function buildEndSlide(): Record<string, Record<string, unknown>> {
       color: "{colors.text}",
     }),
     makeText("end-email", "Contact Email", "email@example.com", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.text-muted}",
     }),
     makeText("end-website", "Contact Website", "https://example.com", {
-      fontSize: "20px",
+      fontSize: "28px",
       color: "{colors.accent}",
     }),
   ]);
@@ -710,10 +710,10 @@ export function buildPresentation(): CanvasDocument {
       },
       typography: {
         title: { fontFamily: "Inter", fontSize: "68px", fontWeight: "bold", lineHeight: "1.1" },
-        subtitle: { fontFamily: "Inter", fontSize: "24px", fontWeight: "normal", lineHeight: "1.4" },
+        subtitle: { fontFamily: "Inter", fontSize: "44px", fontWeight: "normal", lineHeight: "1.3" },
         heading: { fontFamily: "Inter", fontSize: "48px", fontWeight: "bold", lineHeight: "1.2" },
-        body: { fontFamily: "Inter", fontSize: "18px", fontWeight: "normal", lineHeight: "1.6" },
-        caption: { fontFamily: "Inter", fontSize: "20px", fontWeight: "normal", lineHeight: "1.5" },
+        body: { fontFamily: "Inter", fontSize: "36px", fontWeight: "normal", lineHeight: "1.5" },
+        caption: { fontFamily: "Inter", fontSize: "28px", fontWeight: "normal", lineHeight: "1.4" },
       },
       borderRadius: {},
       shadows: {},
