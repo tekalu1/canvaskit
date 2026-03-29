@@ -21,11 +21,19 @@
 
 ### `canvaskit init [name]`
 
-新しい `.canvas.json` を作成。`--template landing` でランディングページテンプレート。`--list-templates` で一覧表示。
+新しい `.canvas.json` を作成。`--template` でテンプレートから生成。`--list-templates` で一覧表示。
+
+テンプレート:
+- `landing` — ランディングページ (1440px幅)
+- `design-system` — デザインシステム (10ページ: Color Palette, Typography, Spacing, Icons, Buttons 等)
+- `presentation` — プレゼンテーション (12スライド, 1920x1080固定)
 
 ```bash
 canvaskit init my-design
 canvaskit init my-landing --template landing
+canvaskit init my-ds --template design-system
+canvaskit init my-slides --template presentation
+canvaskit init --list-templates
 ```
 
 ### `canvaskit open <file>`
