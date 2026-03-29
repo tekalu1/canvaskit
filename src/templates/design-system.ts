@@ -76,7 +76,7 @@ function pageShell(
       name: "Content Area",
       layout: { direction: "column", gap: "24px" },
       children: contentChildren,
-      styles: {},
+      styles: { width: "100%" },
     }),
     ...extraNodes,
   ]);
@@ -126,7 +126,7 @@ function buildColorPalettePage(): Record<string, Record<string, unknown>> {
       name: "Brand Colors",
       layout: { direction: "row", gap: "24px", wrap: true },
       children: brandSwatchIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
   sectionIds.push(brandSectionId);
@@ -171,7 +171,7 @@ function buildColorPalettePage(): Record<string, Record<string, unknown>> {
       name: "Semantic Colors",
       layout: { direction: "row", gap: "24px", wrap: true },
       children: semanticSwatchIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
   sectionIds.push(semanticSectionId);
@@ -202,7 +202,7 @@ function buildColorPalettePage(): Record<string, Record<string, unknown>> {
         },
       }),
       makeText(labelId, `Neutral ${n} Label`, n, {
-        fontSize: "12px",
+        fontSize: "14px",
         color: "{colors.text}",
       }),
     );
@@ -215,7 +215,7 @@ function buildColorPalettePage(): Record<string, Record<string, unknown>> {
       name: "Neutral Scale",
       layout: { direction: "row", gap: "16px", wrap: true },
       children: neutralSwatchIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
   sectionIds.push(neutralSectionId);
@@ -236,7 +236,7 @@ function buildTypographyPage(): Record<string, Record<string, unknown>> {
     { key: "h5", label: "Heading 5", size: "20px", weight: "semibold" },
     { key: "h6", label: "Heading 6", size: "16px", weight: "semibold" },
     { key: "body", label: "Body Text", size: "16px", weight: "normal" },
-    { key: "caption", label: "Caption", size: "12px", weight: "normal" },
+    { key: "caption", label: "Caption", size: "14px", weight: "normal" },
     { key: "link", label: "Link Text", size: "16px", weight: "normal" },
   ];
 
@@ -262,7 +262,7 @@ function buildTypographyPage(): Record<string, Record<string, unknown>> {
         styles: { padding: "8px" },
       }),
       makeText(labelId, `${t.label} Label`, `${t.label} — ${t.size} / ${t.weight}`, {
-        fontSize: "12px",
+        fontSize: "14px",
         color: "{colors.text-muted}",
       }),
       makeText(sampleId, `${t.label} Sample`, `The quick brown fox jumps over the lazy dog`, sampleStyles),
@@ -362,7 +362,7 @@ function buildBorderRadiusShadowsPage(): Record<string, Record<string, unknown>>
         },
       }),
       makeText(labelId, `Radius ${r.key} Label`, `${r.key} (${r.value})`, {
-        fontSize: "12px",
+        fontSize: "14px",
         color: "{colors.text}",
       }),
     );
@@ -375,7 +375,7 @@ function buildBorderRadiusShadowsPage(): Record<string, Record<string, unknown>>
       name: "Border Radius",
       layout: { direction: "row", gap: "24px", wrap: true },
       children: radiusItemIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
   sectionIds.push(radiusSectionId);
@@ -424,7 +424,7 @@ function buildBorderRadiusShadowsPage(): Record<string, Record<string, unknown>>
         effects: [s.effect],
       }),
       makeText(labelId, `Shadow ${s.label} Label`, `${s.key}`, {
-        fontSize: "12px",
+        fontSize: "14px",
         color: "{colors.text}",
       }),
     );
@@ -437,7 +437,7 @@ function buildBorderRadiusShadowsPage(): Record<string, Record<string, unknown>>
       name: "Shadows",
       layout: { direction: "row", gap: "24px", wrap: true },
       children: shadowItemIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
   sectionIds.push(shadowSectionId);
@@ -482,7 +482,7 @@ function buildIconsPage(): Record<string, Record<string, unknown>> {
         height: "24px",
       }),
       makeText(labelId, `${ic.label} Label`, ic.label, {
-        fontSize: "12px",
+        fontSize: "14px",
         color: "{colors.text-muted}",
       }),
     );
@@ -495,7 +495,7 @@ function buildIconsPage(): Record<string, Record<string, unknown>> {
       name: "Icons Grid",
       layout: { direction: "row", gap: "16px", wrap: true },
       children: itemIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
 
@@ -539,7 +539,7 @@ function buildButtonsPage(): Record<string, Record<string, unknown>> {
   ];
 
   const sizes = [
-    { key: "sm", label: "Small", fontSize: "12px", padding: "6px", paddingX: "12px" },
+    { key: "sm", label: "Small", fontSize: "14px", padding: "6px", paddingX: "12px" },
     { key: "md", label: "Medium", fontSize: "14px", padding: "8px", paddingX: "16px" },
     { key: "lg", label: "Large", fontSize: "16px", padding: "12px", paddingX: "24px" },
   ];
@@ -907,7 +907,7 @@ function buildCardsPage(): Record<string, Record<string, unknown>> {
       color: "{colors.text-muted}",
     }),
     makeText(statusBadgeId, "Status Badge", "Active", {
-      fontSize: "12px",
+      fontSize: "14px",
       fontWeight: "semibold",
       color: "{colors.background}",
       backgroundColor: "{colors.success}",
@@ -924,7 +924,7 @@ function buildCardsPage(): Record<string, Record<string, unknown>> {
       name: "Cards Grid",
       layout: { direction: "row", gap: "24px", wrap: true },
       children: cardIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
 
@@ -1158,7 +1158,7 @@ function buildFeedbackPage(): Record<string, Record<string, unknown>> {
       styles: {},
     }),
     makeText(badge1Id, "Default Badge", "Default", {
-      fontSize: "12px",
+      fontSize: "14px",
       fontWeight: "semibold",
       color: "{colors.text}",
       backgroundColor: "{colors.surface}",
@@ -1167,7 +1167,7 @@ function buildFeedbackPage(): Record<string, Record<string, unknown>> {
       borderRadius: "9999px",
     }),
     makeText(badge2Id, "Success Badge", "Success", {
-      fontSize: "12px",
+      fontSize: "14px",
       fontWeight: "semibold",
       color: "{colors.background}",
       backgroundColor: "{colors.success}",
@@ -1176,7 +1176,7 @@ function buildFeedbackPage(): Record<string, Record<string, unknown>> {
       borderRadius: "9999px",
     }),
     makeText(badge3Id, "Error Badge", "Error", {
-      fontSize: "12px",
+      fontSize: "14px",
       fontWeight: "semibold",
       color: "{colors.background}",
       backgroundColor: "{colors.error}",
@@ -1223,7 +1223,7 @@ function buildFeedbackPage(): Record<string, Record<string, unknown>> {
       color: "{colors.text}",
     }),
     makeText(toastMsgId, "Toast Message", "Your changes have been saved.", {
-      fontSize: "12px",
+      fontSize: "14px",
       color: "{colors.text-muted}",
     }),
   );
@@ -1326,7 +1326,7 @@ export function buildDesignSystem(): CanvasDocument {
         h5: { fontFamily: "Inter", fontSize: "20px", fontWeight: "semibold", lineHeight: "1.4" },
         h6: { fontFamily: "Inter", fontSize: "16px", fontWeight: "semibold", lineHeight: "1.5" },
         body: { fontFamily: "Inter", fontSize: "16px", fontWeight: "normal", lineHeight: "1.6" },
-        caption: { fontFamily: "Inter", fontSize: "12px", fontWeight: "normal", lineHeight: "1.5" },
+        caption: { fontFamily: "Inter", fontSize: "14px", fontWeight: "normal", lineHeight: "1.5" },
         link: { fontFamily: "Inter", fontSize: "16px", fontWeight: "normal", lineHeight: "1.6" },
       },
       borderRadius: {

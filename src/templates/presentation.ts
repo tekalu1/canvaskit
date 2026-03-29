@@ -61,13 +61,14 @@ function slideRoot(
 ): [string, Record<string, unknown>] {
   return makeFrame("root", {
     name: "Root",
-    layout: { direction: "column", justify: "center", align: "center" },
+    layout: { direction: "column", justify: "center", gap: "40px" },
     children,
     styles: {
       backgroundColor: bgColor,
-      width: `${SLIDE_W}px`,
-      height: `${SLIDE_H}px`,
-      padding: "96px",
+      width: "100%",
+      height: "100%",
+      minHeight: `${SLIDE_H}px`,
+      padding: "60px 80px",
     },
   });
 }
@@ -75,9 +76,20 @@ function slideRoot(
 // ── Page 1: Cover ────────────────────────────────────────────
 function buildCoverSlide(): Record<string, Record<string, unknown>> {
   return Object.fromEntries([
-    slideRoot(["cover-title", "cover-subtitle", "cover-date", "cover-presenter"]),
+    makeFrame("root", {
+      name: "Root",
+      layout: { direction: "column", justify: "center", align: "center", gap: "40px" },
+      children: ["cover-title", "cover-subtitle", "cover-date", "cover-presenter"],
+      styles: {
+        backgroundColor: "{colors.background}",
+        width: "100%",
+        height: "100%",
+        minHeight: `${SLIDE_H}px`,
+        padding: "60px 80px",
+      },
+    }),
     makeText("cover-title", "Slide Title", "Presentation Title", {
-      fontSize: "64px",
+      fontSize: "68px",
       fontWeight: "bold",
       color: "{colors.text}",
     }),
@@ -86,11 +98,11 @@ function buildCoverSlide(): Record<string, Record<string, unknown>> {
       color: "{colors.text-muted}",
     }),
     makeText("cover-date", "Date", "2026-01-01", {
-      fontSize: "16px",
+      fontSize: "20px",
       color: "{colors.text-muted}",
     }),
     makeText("cover-presenter", "Presenter", "Presenter Name", {
-      fontSize: "16px",
+      fontSize: "20px",
       color: "{colors.text-muted}",
     }),
   ]);
@@ -115,12 +127,13 @@ function buildTocSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("toc-list", {
       name: "TOC List",
       layout: { direction: "column", gap: "16px" },
       children: itemIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
 
@@ -139,7 +152,18 @@ function buildTocSlide(): Record<string, Record<string, unknown>> {
 // ── Page 3: Section Divider ──────────────────────────────────
 function buildSectionDividerSlide(): Record<string, Record<string, unknown>> {
   return Object.fromEntries([
-    slideRoot(["sec-title", "sec-subtitle"], "{colors.primary}"),
+    makeFrame("root", {
+      name: "Root",
+      layout: { direction: "column", justify: "center", align: "center", gap: "40px" },
+      children: ["sec-title", "sec-subtitle"],
+      styles: {
+        backgroundColor: "{colors.primary}",
+        width: "100%",
+        height: "100%",
+        minHeight: `${SLIDE_H}px`,
+        padding: "60px 80px",
+      },
+    }),
     makeText("sec-title", "Section Title", "Section Title", {
       fontSize: "56px",
       fontWeight: "bold",
@@ -169,12 +193,13 @@ function buildBulletListSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("bl-list", {
       name: "Bullet List",
       layout: { direction: "column", gap: "12px" },
       children: bulletRowIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
 
@@ -187,7 +212,7 @@ function buildBulletListSlide(): Record<string, Record<string, unknown>> {
         name: `Bullet Item ${i + 1}`,
         layout: { direction: "row", gap: "12px", align: "center" },
         children: [bulletId, textId],
-        styles: {},
+        styles: { width: "100%" },
       }),
       makeText(bulletId, `Bullet ${i + 1}`, "\u30FB", {
         fontSize: "24px",
@@ -211,6 +236,7 @@ function buildTwoColumnSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("tc-columns", {
       name: "Columns",
@@ -278,7 +304,7 @@ function buildImageTextSlide(): Record<string, Record<string, unknown>> {
       height: "48px",
     }),
     makeText("it-image-label", "Image Label", "Image placeholder", {
-      fontSize: "14px",
+      fontSize: "20px",
       color: "{colors.text-muted}",
     }),
     makeFrame("it-text-area", {
@@ -317,7 +343,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
   nodes.push(
     makeFrame("tb-header", {
       name: "Table Header",
-      layout: { direction: "row" },
+      layout: { direction: "row", gap: "8px" },
       children: headerColIds,
       styles: {
         backgroundColor: "{colors.surface}",
@@ -329,7 +355,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
   for (let i = 0; i < headerCols.length; i++) {
     nodes.push(
       makeText(`tb-th-${i + 1}`, `Header ${i + 1}`, headerCols[i], {
-        fontSize: "18px",
+        fontSize: "20px",
         fontWeight: "semibold",
         color: "{colors.text}",
         padding: "16px",
@@ -347,7 +373,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
     nodes.push(
       makeFrame(rowId, {
         name: `Table Row ${r + 1}`,
-        layout: { direction: "row" },
+        layout: { direction: "row", gap: "8px" },
         children: colIds,
         styles: {
           borderBottomWidth: "1px",
@@ -358,7 +384,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
     for (let c = 0; c < dataRows[r].length; c++) {
       nodes.push(
         makeText(`tb-td-${r + 1}-${c + 1}`, `Cell ${r + 1}-${c + 1}`, dataRows[r][c], {
-          fontSize: "16px",
+          fontSize: "20px",
           color: "{colors.text}",
           padding: "16px",
           width: "33%",
@@ -373,6 +399,7 @@ function buildTableSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("tb-container", {
       name: "Table Container",
@@ -401,6 +428,7 @@ function buildFlowchartSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("fc-flow", {
       name: "Flow Container",
@@ -492,6 +520,7 @@ function buildChartSlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("ch-area", {
       name: "Chart Area",
@@ -514,7 +543,7 @@ function buildChartSlide(): Record<string, Record<string, unknown>> {
         styles: {},
       }),
       makeText(valueId, `Value ${b.label}`, b.value, {
-        fontSize: "14px",
+        fontSize: "20px",
         fontWeight: "semibold",
         color: "{colors.text}",
       }),
@@ -530,7 +559,7 @@ function buildChartSlide(): Record<string, Record<string, unknown>> {
         },
       }),
       makeText(labelId, `Label ${b.label}`, b.label, {
-        fontSize: "16px",
+        fontSize: "20px",
         color: "{colors.text-muted}",
       }),
     );
@@ -548,10 +577,12 @@ function buildQuoteSlide(): Record<string, Record<string, unknown>> {
       fontWeight: "bold",
       color: "{colors.text}",
       lineHeight: "1.4",
+      width: "100%",
     }),
     makeText("qt-source", "Quote Source", "\u2014 Peter Drucker", {
       fontSize: "20px",
       color: "{colors.text-muted}",
+      width: "100%",
     }),
   ]);
 }
@@ -573,12 +604,13 @@ function buildSummarySlide(): Record<string, Record<string, unknown>> {
       fontSize: "48px",
       fontWeight: "bold",
       color: "{colors.text}",
+      width: "100%",
     }),
     makeFrame("sm-points", {
       name: "Key Points",
       layout: { direction: "column", gap: "16px" },
       children: pointIds,
-      styles: {},
+      styles: { width: "100%" },
     }),
   );
 
@@ -597,9 +629,20 @@ function buildSummarySlide(): Record<string, Record<string, unknown>> {
 // ── Page 12: End Page ────────────────────────────────────────
 function buildEndSlide(): Record<string, Record<string, unknown>> {
   return Object.fromEntries([
-    slideRoot(["end-thankyou", "end-email", "end-website"]),
+    makeFrame("root", {
+      name: "Root",
+      layout: { direction: "column", justify: "center", align: "center", gap: "40px" },
+      children: ["end-thankyou", "end-email", "end-website"],
+      styles: {
+        backgroundColor: "{colors.background}",
+        width: "100%",
+        height: "100%",
+        minHeight: `${SLIDE_H}px`,
+        padding: "60px 80px",
+      },
+    }),
     makeText("end-thankyou", "Thank You Text", "Thank you", {
-      fontSize: "64px",
+      fontSize: "68px",
       fontWeight: "bold",
       color: "{colors.text}",
     }),
@@ -660,11 +703,11 @@ export function buildPresentation(): CanvasDocument {
         "4xl": { value: "96px" },
       },
       typography: {
-        title: { fontFamily: "Inter", fontSize: "64px", fontWeight: "bold", lineHeight: "1.1" },
+        title: { fontFamily: "Inter", fontSize: "68px", fontWeight: "bold", lineHeight: "1.1" },
         subtitle: { fontFamily: "Inter", fontSize: "24px", fontWeight: "normal", lineHeight: "1.4" },
         heading: { fontFamily: "Inter", fontSize: "48px", fontWeight: "bold", lineHeight: "1.2" },
         body: { fontFamily: "Inter", fontSize: "18px", fontWeight: "normal", lineHeight: "1.6" },
-        caption: { fontFamily: "Inter", fontSize: "14px", fontWeight: "normal", lineHeight: "1.5" },
+        caption: { fontFamily: "Inter", fontSize: "20px", fontWeight: "normal", lineHeight: "1.5" },
       },
       borderRadius: {},
       shadows: {},
